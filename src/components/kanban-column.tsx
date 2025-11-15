@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Package } from 'lucide-react'
 import type { Product, ProductStage, HourlyControl } from '@/lib/types'
 import { KanbanCard } from './kanban-card'
-import { useVirtualizer } from '@tanstack/react-virtual'
+
 // Mantido sem constantes específicas de cor para um visual mais neutro
 
 interface KanbanColumnProps {
@@ -42,7 +42,6 @@ export const KanbanColumn = memo(KanbanColumnBase)
 function KanbanColumnBase({
   id,
   title,
-  color: _color,
   products,
   formatDate,
   getDuration,
@@ -50,7 +49,7 @@ function KanbanColumnBase({
   onPauseProduction,
   onResumeProduction,
   onBlockProduction,
-  onDeleteProduct
+  onDeleteProduct,
 }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: id,
@@ -82,109 +81,8 @@ function KanbanColumnBase({
     {} as Record<string, Product[]>
   )
 
-  // Componente virtualizado para grandes grupos de produtos
-  const VirtualizedProductGroup = ({ status, icon, label, bgColor }: {
-    status: string
-    icon: string
-    label: string
-    bgColor: string
-  }) => {
-    const statusProducts = productsByStatus[status]
-    const parentRef = useRef<HTMLDivElement>(null)
-
-    // Sempre inicializar o hook, mesmo que não seja usado
-    const rowVirtualizer = useVirtualizer({
-      count: statusProducts?.length || 0,
-      getScrollElement: () => parentRef.current,
-      estimateSize: () => 92,
-      measureElement: (el) => el.getBoundingClientRect().height,
-      getItemKey: (index) => statusProducts?.[index]?.id || `item-${index}`,
-    })
-
-    if (!statusProducts || statusProducts.length === 0) {
-      return null
-    }
-
-    // Virtualize large groups to reduce DOM nodes
-    const shouldVirtualize = statusProducts.length > 50
-
-    if (!shouldVirtualize) {
-      return (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-2">
-            {icon && <span>{icon}</span>}
-            {label} ({statusProducts.length})
-          </div>
-          {statusProducts.map((product) => (
-            <KanbanCard
-              key={product.id}
-              product={product}
-              formatDate={formatDate}
-              getDuration={getDuration}
-              getLatestHourlyControl={getLatestHourlyControl}
-              onPauseProduction={onPauseProduction}
-              onResumeProduction={onResumeProduction}
-              onBlockProduction={onBlockProduction}
-              onDeleteProduct={onDeleteProduct}
-            />
-          ))}
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-2">
-          {icon && <span>{icon}</span>}
-          {label} ({statusProducts.length})
-        </div>
-        <div
-          className="space-y-3 min-h-[260px] p-2 rounded-md bg-slate-50 border border-slate-200/60 overflow-y-auto"
-        >
-          <div
-            className="virtual-container"
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-              const product = statusProducts[virtualItem.index]
-              return (
-                <div
-                  key={product.id}
-                  className="virtual-item"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualItem.size}px`,
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}
-                >
-                  <KanbanCard
-                    product={product}
-                    formatDate={formatDate}
-                    getDuration={getDuration}
-                    getLatestHourlyControl={getLatestHourlyControl}
-                    onPauseProduction={onPauseProduction}
-                    onResumeProduction={onResumeProduction}
-                    onBlockProduction={onBlockProduction}
-                    onDeleteProduct={onDeleteProduct}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Render não virtualizado para grupos pequenos
-  const renderProductGroup = (status: string, icon: string, label: string, bgColor: string) => {
+  // Renderização dos produtos por status para grupos pequenos
+  const renderProductGroup = (status: string, icon: string, label: string) => {
     const statusProducts = productsByStatus[status]
 
     if (!statusProducts || statusProducts.length === 0) {
@@ -242,10 +140,10 @@ function KanbanColumnBase({
           className="space-y-3 min-h-[260px] p-2 rounded-md bg-slate-50 border border-slate-200/60 overflow-y-auto"
         >
           <SortableContext items={products.map(p => p.id)} strategy={verticalListSortingStrategy}>
-            {renderProductGroup('active', '', 'Em Andamento', 'text-blue-700 bg-blue-100')}
-            {renderProductGroup('paused', '', 'Pausados', 'text-slate-700 bg-slate-100')}
-            {renderProductGroup('blocked', '', 'Bloqueados', 'text-red-700 bg-red-100')}
-            {renderProductGroup('completed', '', 'Concluídos', 'text-green-700 bg-green-100')}
+            {renderProductGroup('active', '', 'Em Andamento')}
+            {renderProductGroup('paused', '', 'Pausados')}
+            {renderProductGroup('blocked', '', 'Bloqueados')}
+            {renderProductGroup('completed', '', 'Concluídos')}
 
             {products.length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 text-slate-400">

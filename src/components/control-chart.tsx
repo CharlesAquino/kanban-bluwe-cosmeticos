@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AlertTriangle, BarChart3, CheckCircle } from 'lucide-react'
+import { AlertTriangle, BarChart3 } from 'lucide-react'
 import type {
   StatisticalMetrics,
   ControlLimits,
@@ -94,8 +94,7 @@ export function ControlChart({ data, chartType, title }: ControlChartProps) {
             )}
             {data.violations.length === 0 && (
               <Badge className="bg-green-100 text-green-800">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                Dentro dos limites
+                ✓ Dentro dos limites
               </Badge>
             )}
           </div>
