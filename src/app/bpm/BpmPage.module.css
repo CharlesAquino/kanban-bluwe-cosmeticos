@@ -1,0 +1,44 @@
+/* styles/BpmPage.module.css */
+.bpmContainer {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.bpmHeader {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+}
+
+.bpmCard {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.bpmCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(16, 185, 129, 0.3);
+}
+
+.metricCard {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  transition: transform 0.3s ease;
+}
+
+.metricCard:hover {
+  transform: scale(1.05);
+}

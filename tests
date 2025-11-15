@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "🧪 Testando APIs do Kanban..."
+
+echo ""
+echo "📊 Testando API Stats:"
+curl -s http://localhost:3000/api/stats | jq . 2>/dev/null || curl -s http://localhost:3000/api/stats
+
+echo ""
+echo "📦 Testando API Products:"
+curl -s http://localhost:3000/api/products | jq . 2>/dev/null || curl -s http://localhost:3000/api/products
+
+echo ""
+echo "✅ Teste concluído!"

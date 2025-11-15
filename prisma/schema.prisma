@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Enums para melhor type safety
+enum UserRole {
+  ADMIN
+  MANAGER
+  OPERATOR
+  VIEWER
+}
+
+enum ProductStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  BLOCKED
+  CANCELLED
+}
+
+enum ProductStage {
+  BACKLOG
+  PRODUCAO_1KG
+  AVALIACAO_COR
+  PRODUCAO_5KG
+  AVALIACAO_FINAL
+  APROVADO
+  REJEITADO
+}
+
+// Tabelas principais
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      UserRole @default(VIEWER)
+  image     String?
+  emailVerified DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  op            String   @unique // Ordem de produção única
+  batch         String   // Lote
+  quantity      Float    // Quantidade em kg
+  currentStage  String   @default("producao_1kg")
+  status        String   @default("active")
+  priority      Int      @default(1)
+  dueDate       DateTime?
+  notes         String?
+  image         String?  // URL da imagem do produto
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdById   String
+  updatedById   String?
+
+  @@index([op])
+  @@index([batch])
+  @@index([currentStage])
+  @@index([status])
+  @@index([createdById])
+  @@index([priority])
+  @@map("products")
+}
