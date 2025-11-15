@@ -1,9 +1,21 @@
-🧠🚀AtvaçãoRáia### Config ViávdAb
-dari`v.o`c:http://s.slck.com/servces/xxxxxxxx/xxxxxxxx/xxxxxxxxInirSstema Ne```bh#Oçã1:tudjunt
-nucpnerorchstaed
-#Opção2:Iniddvid
-nump:v#Svdrcp
-pmrumc:aaba#Bandddopnmeu  #Sismul
+🧠🚀 Ativação Rápida
+
+### Configuração Viável
+
+Adicionar ao `.env.local`:
+```
+SLACK_WEBHOOK=https://hooks.slack.com/services/TXXXX/BXXXX/XXXXXXXX
+```
+
+Iniciar Sistema Neural:
+
+```bash
+# Opção 1: Tudo junto
+npm run dev
+
+# Opção 2: Individual
+npm run neural
+npm run playwright
 ```
 
 ###3VrifcStuVifirtsssmrnpmnr:sttus##🎯FunialdPric

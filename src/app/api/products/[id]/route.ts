@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-import { getDb } from '@/lib/db'
-const db = getDb()
 
-interface Product {
-  id: string
-  name: string
-  op: string
-  batch: string
-  quantity: number
-  currentStage: string
-  status: string
-  image?: string
-  createdAt: string
-  updatedAt: string
-}
-
-// GET /api/products/[id] - Buscar produto por ID
+// GET /api/products/[id] - Buscar produto específico
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -25,8 +12,13 @@ export async function GET(
   try {
     const { id } = params
 
-    const selectStmt = db.prepare('SELECT * FROM products WHERE id = ?')
-    const product = selectStmt.get(id) as Product
+    console.log('=== API GET: Buscando produto ===')
+    console.log('Produto ID:', id)
+
+    // Buscar produto com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
     if (!product) {
       return NextResponse.json({
@@ -35,12 +27,16 @@ export async function GET(
       }, { status: 404 })
     }
 
+    console.log('Produto encontrado:', product)
+
     return NextResponse.json({
       success: true,
       data: product
     })
   } catch (error) {
+    console.error('=== API GET: ERRO ===')
     console.error('Erro ao buscar produto:', error)
+
     return NextResponse.json({
       success: false,
       error: 'Erro interno do servidor'
@@ -58,9 +54,13 @@ export async function PUT(
     const body = await request.json()
     const { name, op, batch, quantity, image } = body
 
-    // Buscar produto atual
-    const selectStmt = db.prepare('SELECT * FROM products WHERE id = ?')
-    const product = selectStmt.get(id) as Product
+    console.log('=== API PUT: Atualizando produto ===')
+    console.log('Dados recebidos:', { id, name, op, batch, quantity, image })
+
+    // Buscar produto atual com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
     if (!product) {
       return NextResponse.json({
@@ -69,24 +69,29 @@ export async function PUT(
       }, { status: 404 })
     }
 
-    // Atualizar produto
-    const updateStmt = db.prepare(`
-      UPDATE products
-      SET name = ?, op = ?, batch = ?, quantity = ?, image = ?, updatedAt = ?
-      WHERE id = ?
-    `)
+    // Atualizar produto com Prisma
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        name: name !== undefined ? String(name).trim() : product.name,
+        op: op !== undefined ? String(op).trim() : product.op,
+        batch: batch !== undefined ? String(batch).trim() : product.batch,
+        quantity: quantity !== undefined ? Number(quantity) : product.quantity,
+        image: image !== undefined ? (String(image).trim() || null) : product.image,
+        updatedAt: new Date()
+      }
+    })
 
-    updateStmt.run(name || product.name, op || product.op, batch || product.batch, quantity || product.quantity, image || product.image, new Date().toISOString(), id)
-
-    // Buscar produto atualizado
-    const updatedProduct = selectStmt.get(id) as Product
+    console.log('Produto atualizado:', updatedProduct)
 
     return NextResponse.json({
       success: true,
       data: updatedProduct
     })
   } catch (error) {
+    console.error('=== API PUT: ERRO ===')
     console.error('Erro ao atualizar produto:', error)
+
     return NextResponse.json({
       success: false,
       error: 'Erro interno do servidor'
@@ -105,9 +110,10 @@ export async function DELETE(
     console.log('=== API DELETE: Deletando produto ===')
     console.log('Produto ID:', id)
 
-    // Verificar se produto existe
-    const selectStmt = db.prepare('SELECT * FROM products WHERE id = ?')
-    const product = selectStmt.get(id) as Product
+    // Verificar se produto existe com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
     if (!product) {
       return NextResponse.json({
@@ -116,9 +122,10 @@ export async function DELETE(
       }, { status: 404 })
     }
 
-    // Deletar produto
-    const deleteStmt = db.prepare('DELETE FROM products WHERE id = ?')
-    deleteStmt.run(id)
+    // Deletar produto com Prisma
+    await prisma.product.delete({
+      where: { id }
+    })
 
     console.log('Produto deletado:', product)
 

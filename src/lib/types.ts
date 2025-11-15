@@ -14,20 +14,20 @@
  * - Ordered: Ordem lógica de produção
  */
 export type ProductStage =
-  | 'producao_1kg'
-  | 'avaliacao_cor'
-  | 'performance'
-  | 'reator'
-  | 'avaliacao_cor_reator'
-  | 'performance_reator'
-  | 'finalizado'
+  | 'BACKLOG'
+  | 'PRODUCAO_1KG'
+  | 'AVALIACAO_COR'
+  | 'PRODUCAO_5KG'
+  | 'AVALIACAO_FINAL'
+  | 'APROVADO'
+  | 'REJEITADO'
 
 /**
  * Status do produto aplicando clean code:
  * - Clear States: Estados claros e mutuamente exclusivos
  * - Lifecycle: Ciclo de vida completo do produto
  */
-export type ProductStatus = 'active' | 'paused' | 'completed' | 'blocked' | 'cancelled'
+export type ProductStatus = 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'BLOCKED' | 'CANCELLED'
 
 // ========== TIPOS PRINCIPAIS ==========
 

@@ -82,14 +82,24 @@ function KanbanColumnBase({
     {} as Record<string, Product[]>
   )
 
-  /**
-   * Renderiza grupo de produtos por status aplicando clean code:
-   * - DRY: Reutiliza lógica comum
-   * - Component Composition: Separa responsabilidades
-   * - Props: Passa dados necessários
-   */
-  const renderProductGroup = (status: string, icon: string, label: string, bgColor: string) => {
+  // Componente virtualizado para grandes grupos de produtos
+  const VirtualizedProductGroup = ({ status, icon, label, bgColor }: {
+    status: string
+    icon: string
+    label: string
+    bgColor: string
+  }) => {
     const statusProducts = productsByStatus[status]
+    const parentRef = useRef<HTMLDivElement>(null)
+
+    // Sempre inicializar o hook, mesmo que não seja usado
+    const rowVirtualizer = useVirtualizer({
+      count: statusProducts?.length || 0,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 92,
+      measureElement: (el) => el.getBoundingClientRect().height,
+      getItemKey: (index) => statusProducts?.[index]?.id || `item-${index}`,
+    })
 
     if (!statusProducts || statusProducts.length === 0) {
       return null
@@ -100,10 +110,10 @@ function KanbanColumnBase({
 
     if (!shouldVirtualize) {
       return (
-        <div className="space-y-2">
-          <div className={`flex items-center gap-2 text-xs font-medium px-2 py-1 rounded ${bgColor}`}>
-            <span>{icon}</span>
-            <span>{label} ({statusProducts.length})</span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-2">
+            {icon && <span>{icon}</span>}
+            {label} ({statusProducts.length})
           </div>
           {statusProducts.map((product) => (
             <KanbanCard
@@ -122,46 +132,84 @@ function KanbanColumnBase({
       )
     }
 
-    const rowVirtualizer = useVirtualizer({
-      count: statusProducts.length,
-      getScrollElement: () => parentRef.current,
-      estimateSize: () => 92, // fallback average height (px)
-      measureElement: (el) => el.getBoundingClientRect().height,
-      getItemKey: (index) => statusProducts[index].id,
-      overscan: 8,
-    })
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-2">
+          {icon && <span>{icon}</span>}
+          {label} ({statusProducts.length})
+        </div>
+        <div
+          className="space-y-3 min-h-[260px] p-2 rounded-md bg-slate-50 border border-slate-200/60 overflow-y-auto"
+        >
+          <div
+            className="virtual-container"
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+              const product = statusProducts[virtualItem.index]
+              return (
+                <div
+                  key={product.id}
+                  className="virtual-item"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualItem.size}px`,
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                >
+                  <KanbanCard
+                    product={product}
+                    formatDate={formatDate}
+                    getDuration={getDuration}
+                    getLatestHourlyControl={getLatestHourlyControl}
+                    onPauseProduction={onPauseProduction}
+                    onResumeProduction={onResumeProduction}
+                    onBlockProduction={onBlockProduction}
+                    onDeleteProduct={onDeleteProduct}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-    const items = rowVirtualizer.getVirtualItems()
+  // Render não virtualizado para grupos pequenos
+  const renderProductGroup = (status: string, icon: string, label: string, bgColor: string) => {
+    const statusProducts = productsByStatus[status]
+
+    if (!statusProducts || statusProducts.length === 0) {
+      return null
+    }
 
     return (
-      <div className="space-y-2">
-        <div className={`flex items-center gap-2 text-xs font-medium px-2 py-1 rounded ${bgColor}`}>
-          <span>{icon}</span>
-          <span>{label} ({statusProducts.length})</span>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500 mb-2">
+          {icon && <span>{icon}</span>}
+          {label} ({statusProducts.length})
         </div>
-        <div style={{ position: 'relative', height: rowVirtualizer.getTotalSize() }}>
-          {items.map((vi) => {
-            const product = statusProducts[vi.index]
-            return (
-              <div
-                key={product.id}
-                style={{ position: 'absolute', top: vi.start, left: 0, right: 0 }}
-                ref={rowVirtualizer.measureElement}
-              >
-                <KanbanCard
-                  product={product}
-                  formatDate={formatDate}
-                  getDuration={getDuration}
-                  getLatestHourlyControl={getLatestHourlyControl}
-                  onPauseProduction={onPauseProduction}
-                  onResumeProduction={onResumeProduction}
-                  onBlockProduction={onBlockProduction}
-                  onDeleteProduct={onDeleteProduct}
-                />
-              </div>
-            )
-          })}
-        </div>
+        {statusProducts.map((product) => (
+          <KanbanCard
+            key={product.id}
+            product={product}
+            formatDate={formatDate}
+            getDuration={getDuration}
+            getLatestHourlyControl={getLatestHourlyControl}
+            onPauseProduction={onPauseProduction}
+            onResumeProduction={onResumeProduction}
+            onBlockProduction={onBlockProduction}
+            onDeleteProduct={onDeleteProduct}
+          />
+        ))}
       </div>
     )
   }

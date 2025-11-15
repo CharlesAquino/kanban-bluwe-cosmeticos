@@ -1,33 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/tabs'
-import {
-  TrendingUp,
-  TrendingDown,
-  Activity,
-  AlertTriangle,
-  CheckCircle,
-  Calculator,
-  BarChart3
-} from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AlertTriangle, BarChart3, CheckCircle } from 'lucide-react'
 import type {
   StatisticalMetrics,
   ControlLimits,
-  CapabilityIndices,
   ControlChartType
 } from '@/lib/types'
 import { CONTROL_CHART_TYPE_LABELS } from '@/lib/types'
 
 interface ControlChartProps {
   data: {
-    data: any[]
+    data: Array<{
+      timestamp: Date
+      value: number
+      batch?: string
+      stage?: string
+    }>
     stats: StatisticalMetrics
     limits: ControlLimits
     violations: number[]
@@ -58,7 +50,7 @@ export function ControlChart({ data, chartType, title }: ControlChartProps) {
     )
   }
 
-  const values = data.data.map(d => d.measurement)
+  const values = data.data.map(d => d.value)
   const { stats, limits, violations } = data
 
   // Configuração do gráfico

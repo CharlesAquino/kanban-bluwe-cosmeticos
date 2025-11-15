@@ -151,7 +151,7 @@ const { response } = await chatCompletion({
 
 **Configuração:**
 ```env
-SLACK_WEBHOOK=https://hooks.slack.com/services/T.../B.../xxx
+SLACK_WEBHOOK=https://hooks.slack.com/services/TXXXX/BXXXX/XXXXXXXX
 ```
 
 **Funções:**
@@ -323,14 +323,10 @@ events.nonConformityCreated(
 # Sistema Neural
 NEURAL_ENABLED=true  # Habilita sistema neural (padrão: true)
 
-# OpenAI (Obrigatório para IA)
-OPENAI_API_KEY=sk-proj-xxx
-
-# Slack (Opcional, mas recomendado)
-SLACK_WEBHOOK=https://hooks.slack.com/services/T.../B.../xxx
-
-# GitHub (Opcional, mas recomendado)
-GITHUB_TOKEN=ghp_xxx
+# Exemplos de configuração (use placeholders seguros)
+OPENAI_API_KEY=sk-seu-chave-aqui
+SLACK_WEBHOOK=https://hooks.slack.com/services/TXXXX/BXXXX/XXXXXXXX
+GITHUB_TOKEN=ghp_seu_token_aqui
 GITHUB_REPO=bluwe/kanban-production
 
 # Playwright (Opcional)

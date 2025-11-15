@@ -41,52 +41,52 @@ export const SHIFT_LABELS: Record<Shift, string> = {
 
 // ========== ESTÁGIOS DE PRODUÇÃO ==========
 export const STAGE_LABELS: Record<ProductStage, string> = {
-  producao_1kg: 'Produção de 1,0 kg',
-  avaliacao_cor: 'Validação de Cor',
-  performance: 'Performance',
-  reator: 'Reator',
-  avaliacao_cor_reator: 'Validação de Cor (Reator)',
-  performance_reator: 'Performance (Reator)',
-  finalizado: 'Finalizado',
+  BACKLOG: 'Backlog',
+  PRODUCAO_1KG: 'Produção de 1,0 kg',
+  AVALIACAO_COR: 'Validação de Cor',
+  PRODUCAO_5KG: 'Produção de 5,0 kg',
+  AVALIACAO_FINAL: 'Validação Final',
+  APROVADO: 'Aprovado',
+  REJEITADO: 'Rejeitado',
 } as const
 
 export const STAGE_ORDER: readonly ProductStage[] = [
-  'producao_1kg',
-  'avaliacao_cor',
-  'performance',
-  'reator',
-  'avaliacao_cor_reator',
-  'performance_reator',
-  'finalizado',
+  'BACKLOG',
+  'PRODUCAO_1KG',
+  'AVALIACAO_COR',
+  'PRODUCAO_5KG',
+  'AVALIACAO_FINAL',
+  'APROVADO',
+  'REJEITADO',
 ] as const
 
 export const STAGE_COLORS: Record<ProductStage, string> = {
-  producao_1kg: 'bg-blue-700',
-  avaliacao_cor: 'bg-slate-600',
-  performance: 'bg-indigo-700',
-  reator: 'bg-blue-800',
-  avaliacao_cor_reator: 'bg-slate-700',
-  performance_reator: 'bg-indigo-800',
-  finalizado: 'bg-green-700',
+  BACKLOG: 'bg-gray-600',
+  PRODUCAO_1KG: 'bg-blue-700',
+  AVALIACAO_COR: 'bg-slate-600',
+  PRODUCAO_5KG: 'bg-blue-800',
+  AVALIACAO_FINAL: 'bg-indigo-600',
+  APROVADO: 'bg-green-700',
+  REJEITADO: 'bg-red-700',
 } as const
 
 export const STAGE_BACKGROUND_COLORS: Record<ProductStage, string> = {
-  producao_1kg: 'bg-blue-50 border-blue-200',
-  avaliacao_cor: 'bg-slate-50 border-slate-200',
-  performance: 'bg-indigo-50 border-indigo-200',
-  reator: 'bg-blue-50 border-blue-200',
-  avaliacao_cor_reator: 'bg-slate-50 border-slate-200',
-  performance_reator: 'bg-indigo-50 border-indigo-200',
-  finalizado: 'bg-green-50 border-green-200',
+  BACKLOG: 'bg-gray-50 border-gray-200',
+  PRODUCAO_1KG: 'bg-blue-50 border-blue-200',
+  AVALIACAO_COR: 'bg-slate-50 border-slate-200',
+  PRODUCAO_5KG: 'bg-blue-50 border-blue-200',
+  AVALIACAO_FINAL: 'bg-indigo-50 border-indigo-200',
+  APROVADO: 'bg-green-50 border-green-200',
+  REJEITADO: 'bg-red-50 border-red-200',
 } as const
 
 // ========== STATUS DE PRODUTO ==========
 export const PRODUCT_STATUS_LABELS: Record<ProductStatus, string> = {
-  active: 'Em Andamento',
-  paused: 'Pausado',
-  completed: 'Concluído',
-  blocked: 'Bloqueado',
-  cancelled: 'Cancelado',
+  ACTIVE: 'Em Andamento',
+  PAUSED: 'Pausado',
+  COMPLETED: 'Concluído',
+  BLOCKED: 'Bloqueado',
+  CANCELLED: 'Cancelado',
 } as const
 
 // ========== STATUS DE EFICIÊNCIA ==========

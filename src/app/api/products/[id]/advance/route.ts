@@ -1,19 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
-const db = getDb()
-
-interface Product {
-  id: string
-  name: string
-  op: string
-  batch: string
-  quantity: number
-  currentStage: string
-  status: string
-  image?: string
-  createdAt: string
-  updatedAt: string
-}
+import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: NextRequest,
@@ -28,13 +14,13 @@ export async function POST(
     console.log('Dados recebidos:', { id, nextStage, mod })
 
     const ALLOWED_STAGES = new Set([
-      'producao_1kg',
-      'avaliacao_cor',
-      'performance',
-      'reator',
-      'avaliacao_cor_reator',
-      'performance_reator',
-      'finalizado',
+      'BACKLOG',
+      'PRODUCAO_1KG',
+      'AVALIACAO_COR',
+      'PRODUCAO_5KG',
+      'AVALIACAO_FINAL',
+      'APROVADO',
+      'REJEITADO',
     ])
 
     if (
@@ -49,9 +35,10 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Buscar produto atual
-    const selectStmt = db.prepare('SELECT * FROM products WHERE id = ?')
-    const product = selectStmt.get(id) as Product
+    // Buscar produto atual com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
     if (!product) {
       return NextResponse.json({
@@ -60,17 +47,14 @@ export async function POST(
       }, { status: 404 })
     }
 
-    // Atualizar produto
-    const updateStmt = db.prepare(`
-      UPDATE products
-      SET currentStage = ?, updatedAt = ?
-      WHERE id = ?
-    `)
-
-    updateStmt.run(nextStage, new Date().toISOString(), id)
-
-    // Buscar produto atualizado
-    const updatedProduct = selectStmt.get(id) as Product
+    // Atualizar produto com Prisma
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        currentStage: nextStage,
+        updatedAt: new Date()
+      }
+    })
 
     console.log('Produto avançado:', updatedProduct)
 

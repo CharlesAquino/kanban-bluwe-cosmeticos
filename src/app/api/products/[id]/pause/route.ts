@@ -1,19 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
-const db = getDb()
-
-interface Product {
-  id: string
-  name: string
-  op: string
-  batch: string
-  quantity: number
-  currentStage: string
-  status: string
-  image?: string
-  createdAt: string
-  updatedAt: string
-}
+import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: NextRequest,
@@ -25,9 +11,10 @@ export async function POST(
     console.log('=== API PAUSE: Pausando produto ===')
     console.log('Produto ID:', id)
 
-    // Buscar produto atual
-    const selectStmt = db.prepare('SELECT * FROM products WHERE id = ?')
-    const product = selectStmt.get(id) as Product
+    // Buscar produto atual com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
     if (!product) {
       return NextResponse.json({
@@ -36,17 +23,14 @@ export async function POST(
       }, { status: 404 })
     }
 
-    // Atualizar status para pausado
-    const updateStmt = db.prepare(`
-      UPDATE products
-      SET status = 'paused', updatedAt = ?
-      WHERE id = ?
-    `)
-
-    updateStmt.run(new Date().toISOString(), id)
-
-    // Buscar produto atualizado
-    const updatedProduct = selectStmt.get(id) as Product
+    // Atualizar status para pausado com Prisma
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        status: 'PAUSED',
+        updatedAt: new Date()
+      }
+    })
 
     console.log('Produto pausado:', updatedProduct)
 

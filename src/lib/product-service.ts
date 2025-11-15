@@ -19,11 +19,11 @@ export class ProductService {
         op: data.op,
         batch: data.batch,
         quantity: data.quantity,
-        currentStage: 'producao_1kg',
+        currentStage: 'PRODUCAO_1KG',
         status: 'in_progress',
         stagesHistory: {
           create: {
-            stage: 'producao_1kg',
+            stage: 'PRODUCAO_1KG',
             startTime: now,
             mod: 1,
           }

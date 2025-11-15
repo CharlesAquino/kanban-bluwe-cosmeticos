@@ -39,7 +39,7 @@ PLAYWRIGHT_URL=http://localhost:3001
 GITHUB_TOKEN=seu_token_github_aqui
 
 # Slack MCP - para notificações/alertas
-SLACK_WEBHOOK=https://hooks.slack.com/services/xxxxxxxx/xxxxxxxx/xxxxxxxx
+SLACK_WEBHOOK=https://hooks.slack.com/services/TXXXX/BXXXX/XXXXXXXX
 ```
 
 ### 2. Instalar MCPs Reais

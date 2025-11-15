@@ -1,19 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
-const db = getDb()
-
-interface Product {
-  id: string
-  name: string
-  op: string
-  batch: string
-  quantity: number
-  currentStage: string
-  status: string
-  image?: string
-  createdAt: string
-  updatedAt: string
-}
+import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: NextRequest,
@@ -25,9 +11,10 @@ export async function POST(
     console.log('=== API RESUME: Retomando produto ===')
     console.log('Produto ID:', id)
 
-    // Buscar produto atual
-    const selectStmt = db.prepare('SELECT * FROM products WHERE id = ?')
-    const product = selectStmt.get(id) as Product
+    // Buscar produto atual com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
     if (!product) {
       return NextResponse.json({
@@ -36,17 +23,14 @@ export async function POST(
       }, { status: 404 })
     }
 
-    // Atualizar status para ativo
-    const updateStmt = db.prepare(`
-      UPDATE products
-      SET status = 'active', updatedAt = ?
-      WHERE id = ?
-    `)
-
-    updateStmt.run(new Date().toISOString(), id)
-
-    // Buscar produto atualizado
-    const updatedProduct = selectStmt.get(id) as Product
+    // Atualizar status para ativo com Prisma
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        status: 'ACTIVE',
+        updatedAt: new Date()
+      }
+    })
 
     console.log('Produto retomado:', updatedProduct)
 

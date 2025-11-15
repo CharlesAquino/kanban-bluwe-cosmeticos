@@ -1,36 +1,20 @@
-import Database from 'better-sqlite3'
 import { NextResponse } from 'next/server'
-
-// Conectar ao banco SQLite
-const db = new Database('./dev.db')
-
-interface Product {
-  id: string
-  name: string
-  op: string
-  batch: string
-  quantity: number
-  currentStage: string
-  status: string
-  createdAt: string
-  updatedAt: string
-}
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    console.log('=== API STATS: Calculando estatísticas do SQLite ===')
+    console.log('=== API STATS: Calculando estatísticas com Prisma ===')
 
-    // Buscar produtos do banco
-    const stmt = db.prepare('SELECT * FROM products')
-    const products: Product[] = stmt.all() as Product[]
+    // Buscar produtos do banco com Prisma
+    const products = await prisma.product.findMany()
 
     // Calcular estatísticas
     const stats = {
       total: products.length,
-      inProgress: products.filter((p: Product) => p.status === 'active' && p.currentStage !== 'backlog' && p.currentStage !== 'completed').length,
-      paused: products.filter((p: Product) => p.status === 'paused').length,
-      completed: products.filter((p: Product) => p.currentStage === 'completed' || p.currentStage === 'aprovado').length,
-      blocked: products.filter((p: Product) => p.status === 'blocked').length,
+      inProgress: products.filter((p) => p.status === 'ACTIVE' && p.currentStage !== 'BACKLOG' && p.currentStage !== 'APROVADO').length,
+      paused: products.filter((p) => p.status === 'PAUSED').length,
+      completed: products.filter((p) => p.currentStage === 'APROVADO' || p.currentStage === 'REJEITADO').length,
+      blocked: products.filter((p) => p.status === 'BLOCKED').length,
     }
 
     console.log('=== API STATS: Estatísticas calculadas:', stats)
