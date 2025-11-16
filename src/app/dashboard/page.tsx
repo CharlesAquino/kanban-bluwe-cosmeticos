@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { SkeletonCard } from '@/components/skeletons'
-import { Activity, Target, BarChart3, RefreshCw, Package } from 'lucide-react'
+import { Activity, Target, BarChart3, RefreshCw, Package, Settings, ChevronDown, Shield, Users, Beaker } from 'lucide-react'
 import { loadProductsAndStats } from '@/lib/product-operations'
+import Link from 'next/link'
 
 interface KanbanStats {
   total: number
@@ -37,6 +37,8 @@ interface DashboardMetrics {
 }
 
 export default function DashboardPage() {
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
+  const [overviewDropdownOpen, setOverviewDropdownOpen] = useState(false)
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -145,34 +147,171 @@ export default function DashboardPage() {
   const healthScore = getOverallHealthScore()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            Dashboard Integrado de Produção
-          </h1>
-          <p className="text-slate-500">
-            Visão consolidada de Produção, Semi-acabados / Quarentena e Qualidade
-          </p>
+    <div className="min-h-screen bg-slate-50">
+      <header className="relative z-10 bg-white/70 backdrop-blur-xl border-b border-slate-200">
+        <div className="mx-auto max-w-7xl px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-700 text-white grid place-items-center font-bold text-lg shadow-lg shadow-slate-500/30">
+                K
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
+                  Dashboard Integrado de Produção
+                </h1>
+                <p className="text-sm text-slate-500 font-medium">Bluwe Cosméticos • Sistema de Produção</p>
+              </div>
+            </div>
+            
+            <nav className="flex items-center gap-4">
+              {/* Dropdown Overview */}
+              <div className="relative z-50">
+                <button
+                  onClick={() => setOverviewDropdownOpen(!overviewDropdownOpen)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 flex items-center gap-2"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Overview</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform ${overviewDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {overviewDropdownOpen && (
+                  <div className="fixed right-72 top-20 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999999]">
+                    <Link
+                      href="/hourly-control"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <BarChart3 className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Hora a Hora</span>
+                        <span className="text-xs text-slate-500">Controle horário</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/analise-operador"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <Users className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">MOD</span>
+                        <span className="text-xs text-slate-500">Análise por operador</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/quality"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <Beaker className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Qualidade</span>
+                        <span className="text-xs text-slate-500">Monitoramento CQ</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/kanban-overview"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <BarChart3 className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Produção</span>
+                        <span className="text-xs text-slate-500">Visão de produção</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/semi-finished-overview"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <Package className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Semi acabados</span>
+                        <span className="text-xs text-slate-500">Visão geral semi-acabados</span>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Dropdown Admin */}
+              <div className="relative z-50">
+                <button
+                  onClick={() => setAdminDropdownOpen(!adminDropdownOpen)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Admin</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform ${adminDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {adminDropdownOpen && (
+                  <div className="fixed right-6 top-20 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999999]">
+                    <Link
+                      href="/"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setAdminDropdownOpen(false)}
+                    >
+                      <Shield className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Admin Home</span>
+                        <span className="text-xs text-slate-500">Painel administrativo</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/admin/quality"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setAdminDropdownOpen(false)}
+                    >
+                      <Beaker className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Qualidade Admin</span>
+                        <span className="text-xs text-slate-500">Controle de qualidade</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/admin/mod"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setAdminDropdownOpen(false)}
+                    >
+                      <Users className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">MOD Admin</span>
+                        <span className="text-xs text-slate-500">Operadores</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/semi-finished"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
+                      onClick={() => setAdminDropdownOpen(false)}
+                    >
+                      <Package className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Semi-acabados Admin</span>
+                        <span className="text-xs text-slate-500">Gerenciar semi-acabados</span>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Botão de atualização */}
+              <Button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg shadow-slate-500/30 hover:shadow-slate-500/50 hover:-translate-y-0.5 transition-all duration-200 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-lg"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Atualizar
+              </Button>
+            </nav>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge
-            className={`${
-              healthScore >= 80
-                ? 'bg-green-100 text-green-800'
-                : healthScore >= 60
-                ? 'bg-slate-100 text-slate-800'
-                : 'bg-red-100 text-red-800'
-            }`}
-          >
-            Saúde: {healthScore}%
-          </Badge>
-          <Button variant="outline" onClick={loadIntegratedData}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar
-          </Button>
-        </div>
-      </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-6 py-8 space-y-6">
 
       {/* Score Geral de Saúde */}
       <Card className="bg-white border border-slate-200">
@@ -291,6 +430,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+      </main>
     </div>
   )
 }

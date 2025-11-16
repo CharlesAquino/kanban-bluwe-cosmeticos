@@ -2,8 +2,7 @@
 
  import { useState, useEffect, useCallback, useMemo } from 'react'
  import useSWR from 'swr'
- import Image from 'next/image'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -26,8 +25,15 @@ import {
   BarChart3,
   FileText,
   Download,
-  Calendar
+  Calendar,
+  Settings,
+  ChevronDown,
+  Shield,
+  Users,
+  Beaker,
+  Package
 } from 'lucide-react'
+import Link from 'next/link'
 import { loadProductsAndStats } from '@/lib/product-operations'
 import { useProcessHistory } from '@/hooks/use-process-history'
 import type { Product, StageHistory } from '@/lib/types'
@@ -87,6 +93,8 @@ const extractOperadorIdFromRecord = (record: ManualProductionRecord): string | u
 }
 
 export default function HourlyControlPage() {
+  const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
+  const [overviewDropdownOpen, setOverviewDropdownOpen] = useState(false)
   const [monitoringData, setMonitoringData] = useState<MonitoringData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
@@ -363,22 +371,157 @@ export default function HourlyControlPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Controle Hora a Hora - Monitoramento
-              </h1>
-              <p className="text-gray-600">
-                Monitoramento Automático de Processos - Bluwe Cosméticos
-              </p>
-            </div>
+      <header className="relative z-10 bg-white/70 backdrop-blur-xl border-b border-slate-200">
+        <div className="mx-auto max-w-7xl px-6 py-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-500">
-                Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
+              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-700 text-white grid place-items-center font-bold text-lg shadow-lg shadow-slate-500/30">
+                <Clock className="h-6 w-6" />
               </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
+                  Controle Hora a Hora - Monitoramento
+                </h1>
+                <p className="text-sm text-slate-500 font-medium">Bluwe Cosméticos • Monitoramento Automático de Processos</p>
+                <p className="text-xs text-slate-500 mt-1">Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}</p>
+              </div>
+            </div>
+            
+            <nav className="flex items-center gap-4">
+              {/* Dropdown Overview */}
+              <div className="relative z-50">
+                <button
+                  onClick={() => setOverviewDropdownOpen(!overviewDropdownOpen)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 flex items-center gap-2"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>Overview</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform ${overviewDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {overviewDropdownOpen && (
+                  <div className="fixed right-72 top-20 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999999]">
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <BarChart3 className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Dashboard</span>
+                        <span className="text-xs text-slate-500">Indicadores em tempo real</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/analise-operador"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <Users className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">MOD</span>
+                        <span className="text-xs text-slate-500">Análise por operador</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/quality"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <Beaker className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Qualidade</span>
+                        <span className="text-xs text-slate-500">Monitoramento CQ</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/kanban-overview"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <BarChart3 className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Produção</span>
+                        <span className="text-xs text-slate-500">Visão de produção</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/semi-finished-overview"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <Package className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Semi acabados</span>
+                        <span className="text-xs text-slate-500">Visão geral semi-acabados</span>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Dropdown Admin */}
+              <div className="relative z-50">
+                <button
+                  onClick={() => setAdminDropdownOpen(!adminDropdownOpen)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Admin</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform ${adminDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {adminDropdownOpen && (
+                  <div className="fixed right-6 top-20 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999999]">
+                    <Link
+                      href="/"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setAdminDropdownOpen(false)}
+                    >
+                      <Shield className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Admin Home</span>
+                        <span className="text-xs text-slate-500">Painel administrativo</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/admin/quality"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setAdminDropdownOpen(false)}
+                    >
+                      <Beaker className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Qualidade Admin</span>
+                        <span className="text-xs text-slate-500">Controle de qualidade</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/admin/mod"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
+                      onClick={() => setAdminDropdownOpen(false)}
+                    >
+                      <Users className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">MOD Admin</span>
+                        <span className="text-xs text-slate-500">Operadores</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/semi-finished"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
+                      onClick={() => setAdminDropdownOpen(false)}
+                    >
+                      <Package className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Semi-acabados Admin</span>
+                        <span className="text-xs text-slate-500">Categorias de semi-acabados</span>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Botões de controle */}
               <Button
                 onClick={() => {
                   loadMonitoringData()
@@ -407,15 +550,14 @@ export default function HourlyControlPage() {
                 className="flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />
-                Relatório Final
+                Relatório
               </Button>
-            </div>
+            </nav>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto max-w-7xl px-6 py-8">
         {/* Cards de Resumo */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
