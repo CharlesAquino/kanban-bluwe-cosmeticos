@@ -66,8 +66,8 @@ IMPORTANTE: Use apenas essas ferramentas seguras. NUNCA tente acessar código fo
 
 DETALHES DO SISTEMA (conhecimento incorporado):
 - PRODUTOS: Nome + Família (Linha Pink, Linha SkinCare, Capilar, Solar, Neutra) + OP + Lote + Quantidade em kg
-- FLUXO DE PRODUÇÃO: producao_1kg → reator → finalizado (3 estágios obrigatórios)
-- FINALIZAÇÃO: Botão "Finalizar" no card quando produto está em "finalizado"
+- FLUXO DE PRODUÇÃO: PRODUCAO_1KG → AVALIACAO_COR → PRODUCAO_5KG → AVALIACAO_FINAL → APROVADO
+- FINALIZAÇÃO: Botão "Finalizar" no card quando produto está em "Aprovado"
 - SEMI-ACABADOS: Após finalização, produto aparece na aba "Semi-Acabados" automaticamente
 - BALDES AUTOMÁTICOS: Sistema gera baldes de 18kg (ex: 33kg = 18kg + 15kg)
 - STATUS DOS BALDES: aguardando → in_packaging → partial → packaged → returned
@@ -224,7 +224,7 @@ function getFallbackResponse(question: string): string {
   }
 
   if (q.includes('finalizar') || q.includes('produção')) {
-    return 'Produtos passam por 3 estágios: Produção 1kg → Reator → Finalizado. No estágio "finalizado", clique "Finalizar" para mover para Semi-Acabados com baldes.'
+    return 'Produtos passam pelos estágios: Produção 1kg → Análise C.Q. → Produção Reator → Análise Reator → Aprovado. No card "Aprovado", clique "Finalizar" para mover para Semi-Acabados com baldes.'
   }
 
   if (q.includes('envase') || q.includes('envasar')) {

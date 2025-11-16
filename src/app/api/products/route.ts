@@ -31,13 +31,13 @@ export async function POST(request: NextRequest) {
     console.log('=== API PRODUCTS: Criando produto com Prisma ===')
 
     const body = await request.json()
-    const { name, op, batch, quantity, image } = body
+    const { name, op, batch, quantity, modOperatorId } = body
 
     // Validação básica
-    if (!name || !op || !batch || !quantity) {
+    if (!name || !op || !batch || !quantity || !modOperatorId) {
       return NextResponse.json({
         success: false,
-        error: 'Campos obrigatórios: name, op, batch, quantity'
+        error: 'Campos obrigatórios: name, op, batch, quantity, modOperatorId'
       }, { status: 400 })
     }
 
@@ -56,10 +56,12 @@ export async function POST(request: NextRequest) {
         op: String(op).trim(),
         batch: String(batch).trim(),
         quantity: qty,
-        currentStage: 'producao_1kg',
-        status: 'active',
-        image: image && String(image).trim() ? String(image).trim() : null,
-        createdById: 'system' // TODO: Implementar autenticação
+        // Estágio inicial padronizado com o enum ProductStage
+        currentStage: 'PRODUCAO_1KG',
+        // Status padronizado com ProductStatus
+        status: 'ACTIVE',
+        // MOD responsável
+        createdById: modOperatorId
       }
     })
 

@@ -36,8 +36,22 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Produto não encontrado' }, { status: 404 })
     }
 
-    if (product.currentStage !== 'finalizado') {
-      return NextResponse.json({ success: false, error: 'Produto ainda não está no estágio Finalizado' }, { status: 400 })
+    const stage = String(product.currentStage).toUpperCase()
+    if (stage !== 'APROVADO' && stage !== 'FINALIZADO') {
+      return NextResponse.json(
+        { success: false, error: 'Produto ainda não está no estágio Aprovado' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar se já existe Semi-Acabado com mesma OP + Lote
+    const dupCheck = db.prepare('SELECT id FROM semi_finished_items WHERE op = ? AND batch = ? LIMIT 1')
+    const existingSfi = dupCheck.get(product.op, product.batch) as { id: string } | undefined
+    if (existingSfi) {
+      return NextResponse.json(
+        { success: false, error: 'Já existe um produto de Semi-Acabados com esta OP e lote.' },
+        { status: 400 }
+      )
     }
 
     // Criar item de semi-acabado

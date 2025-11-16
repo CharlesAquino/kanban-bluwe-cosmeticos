@@ -12,6 +12,7 @@ import {
   resumeProduct,
   blockProduct,
   deleteProduct,
+  finalizeProduct,
 } from '@/lib/product-operations'
 import type { Product, ProductStage } from '@/lib/types'
 import { BarChart3, Package, Clock } from 'lucide-react'
@@ -30,6 +31,7 @@ export default function Home() {
   })
   const [loading, setLoading] = useState(true)
   const [showTimeline, setShowTimeline] = useState(false)
+  const [modOperators, setModOperators] = useState<{ id: string; name: string; role?: string | null; isActive?: boolean }[]>([])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -40,6 +42,22 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  useEffect(() => {
+    const loadOperators = async () => {
+      try {
+        const res = await fetch('/api/mod/operators')
+        if (!res.ok) return
+        const json = await res.json()
+        if (json?.success && Array.isArray(json.data)) {
+          setModOperators(json.data)
+        }
+      } catch {
+        // falha silenciosa, Home continua funcionando sem operadores
+      }
+    }
+    loadOperators()
   }, [])
 
   useEffect(() => {
@@ -101,6 +119,17 @@ export default function Home() {
     }
   }
 
+  const handleFinalize = async (productId: string) => {
+    try {
+      const res = await finalizeProduct(productId)
+      if (!res.success) throw new Error(res.error || 'Falha ao finalizar')
+      showToast('Produto finalizado e enviado para Semi-Acabados', 'success')
+      await fetchData()
+    } catch (e) {
+      showToast(`Erro ao finalizar: ${e instanceof Error ? e.message : 'desconhecido'}`, 'error')
+    }
+  }
+
   const header = useMemo(() => (
     <header className="bg-white/70 backdrop-blur-xl border border-slate-200">
       <div className="mx-auto max-w-7xl px-6 py-6">
@@ -121,18 +150,37 @@ export default function Home() {
           </div>
           
           <nav className="flex items-center gap-3">
-            {/* Abas de navegação */}
-            <Link href="/" className="px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-white/80 border border-slate-200">
-              Home
+            {/* Abas de navegação (ambiente administrativo) */}
+            <Link
+              href="/"
+              className="px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border border-slate-900 bg-slate-900 text-slate-50 shadow-sm hover:border-blue-500 hover:bg-slate-950 hover:shadow-lg hover:-translate-y-0.5 hover:scale-[1.02] transition-all duration-200 flex items-center gap-2"
+            >
+              <span className="w-1.5 h-6 rounded-full bg-gradient-to-b from-blue-500 to-blue-300" />
+              <span>Produção Admin</span>
             </Link>
-            <Link href="/dashboard" className="px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-white/80 border border-slate-200">
-              Dashboard
+            <Link
+              href="/dashboard"
+              className="px-3 py-2 rounded-xl text-xs sm:text-sm font-medium border border-slate-800 bg-slate-800/90 text-slate-100 hover:border-blue-500 hover:bg-slate-900 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <span>Dashboard</span>
             </Link>
-            <Link href="/bpm" className="px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-white/80 border border-slate-200">
-              BPM
+            <Link
+              href="/admin/quality"
+              className="px-3 py-2 rounded-xl text-xs sm:text-sm font-medium border border-slate-800 bg-slate-800/90 text-slate-100 hover:border-blue-500 hover:bg-slate-900 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <span>Qualidade Admin</span>
             </Link>
-            <Link href="/hourly-control" className="px-3 py-2 rounded-xl text-sm font-medium text-slate-700 hover:bg-white/80 border border-slate-200">
-              Controle Hora a Hora
+            <Link
+              href="/admin/mod"
+              className="px-3 py-2 rounded-xl text-xs sm:text-sm font-medium border border-slate-800 bg-slate-800/90 text-slate-100 hover:border-blue-500 hover:bg-slate-900 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <span>MOD Admin</span>
+            </Link>
+            <Link
+              href="/semi-finished"
+              className="px-3 py-2 rounded-xl text-xs sm:text-sm font-medium border border-slate-800 bg-slate-800/90 text-slate-100 hover:border-blue-500 hover:bg-slate-900 hover:text-white transition-colors flex items-center gap-2"
+            >
+              <span>Semi-Acabados</span>
             </Link>
             <button
               className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 hover-lift ${
@@ -259,6 +307,8 @@ export default function Home() {
                   onResumeProduction={handleResume}
                   onBlockProduction={handleBlock}
                   onDeleteProduct={handleDelete}
+                  onFinalizeProduct={handleFinalize}
+                  modOperators={modOperators}
                 />
               </div>
             </section>

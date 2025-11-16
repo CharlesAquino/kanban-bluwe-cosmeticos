@@ -9,7 +9,7 @@ export const KANBAN_KNOWLEDGE_BASE = {
   entities: {
     products: {
       fields: ["id", "name", "family", "op", "batch", "quantity", "currentStage", "status"],
-      stages: ["producao_1kg", "reator", "finalizado"],
+      stages: ["PRODUCAO_1KG", "AVALIACAO_COR", "PRODUCAO_5KG", "AVALIACAO_FINAL", "APROVADO"],
       statuses: ["active", "paused", "blocked", "completed"],
       families: ["Linha Pink", "Linha SkinCare", "Capilar", "Solar", "Neutra"]
     },
@@ -38,8 +38,8 @@ export const KANBAN_KNOWLEDGE_BASE = {
   workflows: {
     production: [
       "1. Criar produto com família, OP, lote e quantidade",
-      "2. Produto avança pelos estágios: Produção 1kg → Reator → Finalizado",
-      "3. No estágio 'finalizado', clicar 'Finalizar' para mover ao Semi-Acabados",
+      "2. Produto avança pelos estágios: Produção 1kg → Análise C.Q. → Produção Reator → Análise Reator → Aprovado",
+      "3. No card 'Aprovado', clicar 'Finalizar' para mover ao Semi-Acabados",
       "4. Sistema gera automaticamente baldes de 18kg"
     ],
 

@@ -6,39 +6,38 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { SkeletonCard } from '@/components/skeletons'
-import {
-  Activity,
-  TrendingUp,
-  Target,
-  BarChart3,
-  RefreshCw,
-  Package,
-  Workflow,
-  AlertTriangle,
-} from 'lucide-react'
-import { BPMService, BPMMetrics } from '@/lib/bpm-service'
-import type { ProcessDefinition } from '@/lib/types'
-import Link from 'next/link'
+import { Activity, Target, BarChart3, RefreshCw, Package } from 'lucide-react'
+import { loadProductsAndStats } from '@/lib/product-operations'
 
-interface IntegratedMetrics {
-  bpm: BPMMetrics
-  cep: {
-    totalCharts: number
-    activeAnalyses: number
-    avgEfficiency: number
-    qualityScore: number
-  }
-  kanban: {
-    totalProducts: number
-    inProgress: number
-    completed: number
-    blocked: number
-  }
+interface KanbanStats {
+  total: number
+  inProgress: number
+  paused: number
+  completed: number
+  blocked: number
+}
+
+interface SemiOverview {
+  items: number
+  inQuarantine: number
+  saldoTotalKg: number
+}
+
+interface QualityOverview {
+  totalTests: number
+  rejectedTests: number
+  openNCs: number
+  approvalRate: number
+}
+
+interface DashboardMetrics {
+  kanban: KanbanStats
+  semi: SemiOverview
+  quality: QualityOverview
 }
 
 export default function DashboardPage() {
-  const [metrics, setMetrics] = useState<IntegratedMetrics | null>(null)
-  const [processes, setProcesses] = useState<ProcessDefinition[]>([])
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -49,36 +48,65 @@ export default function DashboardPage() {
     try {
       setLoading(true)
 
-      // Carregar dados BPM
-      const [processesData, bpmMetricsData] = await Promise.all([
-        BPMService.getProcessDefinitions(),
-        BPMService.calculateBPMMetrics()
+      // Kanban (produtos em produção)
+      const { stats: kanbanStats } = await loadProductsAndStats()
+
+      // Semi-acabados
+      const semiRes = await fetch('/api/semi-finished', { cache: 'no-store' })
+      let semiItems: Array<{ quantity_total: number; quantity_envasado: number }> = []
+      if (semiRes.ok) {
+        const json = await semiRes.json()
+        semiItems = Array.isArray(json?.data) ? json.data : []
+      }
+
+      const semi: SemiOverview = {
+        items: semiItems.length,
+        inQuarantine: semiItems.filter((it) => Number(it.quantity_envasado) > 0).length,
+        saldoTotalKg: semiItems.reduce(
+          (acc, it) => acc + (Number(it.quantity_total) - Number(it.quantity_envasado)),
+          0
+        ),
+      }
+
+      // Qualidade (testes e NCs)
+      const [testsRes, ncRes] = await Promise.all([
+        fetch('/api/quality/tests', { cache: 'no-store' }),
+        fetch('/api/quality/nc', { cache: 'no-store' }),
       ])
 
-      // Valores neutros para CEP e Kanban (sem mock) até integrar serviços reais
-      const cepData = {
-        totalCharts: 0,
-        activeAnalyses: 0,
-        avgEfficiency: 0,
-        qualityScore: 0
+      let tests: { approved: boolean }[] = []
+      if (testsRes.ok) {
+        const json = await testsRes.json()
+        tests = Array.isArray(json?.data) ? json.data : []
       }
 
-      const kanbanData = {
-        totalProducts: 0,
-        inProgress: 0,
-        completed: 0,
-        blocked: 0
+      let ncs: { status: string }[] = []
+      if (ncRes.ok) {
+        const json = await ncRes.json()
+        ncs = Array.isArray(json?.data) ? json.data : []
       }
 
-      setProcesses(processesData)
+      const totalTests = tests.length
+      const rejectedTests = tests.filter((t) => !t.approved).length
+      const openNCs = ncs.filter((nc) => nc.status !== 'closed').length
+      const approvalRate =
+        totalTests > 0 ? ((totalTests - rejectedTests) / totalTests) * 100 : 100
+
+      const kanban: KanbanStats = {
+        total: kanbanStats.total,
+        inProgress: kanbanStats.inProgress,
+        paused: kanbanStats.paused,
+        completed: kanbanStats.completed,
+        blocked: kanbanStats.blocked,
+      }
+
       setMetrics({
-        bpm: bpmMetricsData,
-        cep: cepData,
-        kanban: kanbanData
+        kanban,
+        semi,
+        quality: { totalTests, rejectedTests, openNCs, approvalRate },
       })
-
-    } catch (error) {
-      console.error('Erro ao carregar dados integrados:', error)
+    } catch (err) {
+      console.error('Erro ao carregar dados do dashboard:', err)
     } finally {
       setLoading(false)
     }
@@ -87,12 +115,14 @@ export default function DashboardPage() {
   const getOverallHealthScore = () => {
     if (!metrics) return 0
 
-    // Cálculo composto: BPM (40%) + CEP (35%) + Kanban (25%)
-    const bpmScore = (metrics.bpm.throughput / 10) * 40 // Normalizado para 10
-    const cepScore = (metrics.cep.qualityScore / 5) * 35 // Normalizado para 5
-    const kanbanScore = ((metrics.kanban.completed / metrics.kanban.totalProducts) * 100 / 100) * 25
+    const completionRate =
+      metrics.kanban.total > 0 ? metrics.kanban.completed / metrics.kanban.total : 0
+    const qualityScore = metrics.quality.approvalRate / 100
+    const quarantinePenalty =
+      metrics.semi.items > 0 ? metrics.semi.inQuarantine / metrics.semi.items : 0
 
-    return Math.round(bpmScore + cepScore + kanbanScore)
+    const score = 0.4 * completionRate + 0.4 * qualityScore + 0.2 * (1 - quarantinePenalty)
+    return Math.round(score * 100)
   }
 
   if (loading) {
@@ -119,14 +149,22 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">
-            Dashboard Integrado - BPM + Kanban + CEP
+            Dashboard Integrado de Produção
           </h1>
           <p className="text-slate-500">
-            Monitoramento completo e integrado de processos de negócio, produção e qualidade
+            Visão consolidada de Produção, Semi-acabados / Quarentena e Qualidade
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className={`${healthScore >= 80 ? 'bg-green-100 text-green-800' : healthScore >= 60 ? 'bg-slate-100 text-slate-800' : 'bg-red-100 text-red-800'}`}>
+          <Badge
+            className={`${
+              healthScore >= 80
+                ? 'bg-green-100 text-green-800'
+                : healthScore >= 60
+                ? 'bg-slate-100 text-slate-800'
+                : 'bg-red-100 text-red-800'
+            }`}
+          >
             Saúde: {healthScore}%
           </Badge>
           <Button variant="outline" onClick={loadIntegratedData}>
@@ -154,19 +192,19 @@ export default function DashboardPage() {
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div className="text-center">
                 <div className="font-medium text-emerald-700">
-                  {metrics?.bpm.activeProcesses || 0}
+                  {metrics?.kanban.inProgress ?? 0}
                 </div>
-                <div className="text-slate-600">Processos Ativos</div>
+                <div className="text-slate-600">Produtos em Produção</div>
               </div>
               <div className="text-center">
                 <div className="font-medium text-blue-700">
-                  {metrics?.cep.avgEfficiency.toFixed(1) || 0}%
+                  {metrics?.quality.approvalRate.toFixed(1) ?? 0}%
                 </div>
-                <div className="text-slate-600">Eficiência Média</div>
+                <div className="text-slate-600">Aprovação em Qualidade</div>
               </div>
               <div className="text-center">
                 <div className="font-medium text-indigo-700">
-                  {metrics?.kanban.completed || 0}
+                  {metrics?.kanban.completed ?? 0}
                 </div>
                 <div className="text-slate-600">Produtos Concluídos</div>
               </div>
@@ -177,214 +215,81 @@ export default function DashboardPage() {
 
       {/* Métricas Integradas */}
       <div className="grid gap-6 md:grid-cols-3">
-        {/* BPM Metrics */}
+        {/* Produção Kanban */}
         <Card className="bg-white border border-slate-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-blue-700">
-              <Workflow className="h-5 w-5" />
-              Business Process Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-slate-700">Processos Ativos:</span>
-              <span className="font-mono">{metrics?.bpm.activeProcesses || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-slate-700">Tempo Médio de Ciclo:</span>
-              <span className="font-mono">{metrics?.bpm.avgCycleTime.toFixed(1) || 0}h</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-slate-700">Vazão:</span>
-              <span className="font-mono">{metrics?.bpm.throughput.toFixed(1) || 0}/h</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-slate-700">Taxa de Defeitos:</span>
-              <span className="font-mono text-red-700">{metrics?.bpm.defectRate.toFixed(1) || 0}%</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* CEP Metrics */}
-        <Card className="bg-white border border-slate-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-emerald-700">
-              <BarChart3 className="h-5 w-5" />
-              Controle Estatístico de Processos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-slate-700">Cartas Ativas:</span>
-              <span className="font-mono">{metrics?.cep.totalCharts || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-slate-700">Análises Ativas:</span>
-              <span className="font-mono">{metrics?.cep.activeAnalyses || 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-slate-700">Eficiência Média:</span>
-              <span className="font-mono text-emerald-700">{metrics?.cep.avgEfficiency.toFixed(1) || 0}%</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-slate-700">Qualidade:</span>
-              <span className="font-mono">{metrics?.cep.qualityScore.toFixed(1) || 0}/5</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Kanban Metrics */}
-        <Card className="bg-white border border-slate-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-indigo-700">
               <Package className="h-5 w-5" />
-              Sistema Kanban
+              Produção Kanban
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-slate-700">Produtos Totais:</span>
-              <span className="font-mono">{metrics?.kanban.totalProducts || 0}</span>
+              <span className="font-mono">{metrics?.kanban.total ?? 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-slate-700">Em Andamento:</span>
-              <span className="font-mono text-blue-700">{metrics?.kanban.inProgress || 0}</span>
+              <span className="font-mono text-blue-700">{metrics?.kanban.inProgress ?? 0}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-slate-700">Concluídos:</span>
-              <span className="font-mono text-emerald-700">{metrics?.kanban.completed || 0}</span>
+              <span className="text-sm text-slate-700">Pausados:</span>
+              <span className="font-mono text-slate-700">{metrics?.kanban.paused ?? 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-slate-700">Bloqueados:</span>
-              <span className="font-mono text-red-700">{metrics?.kanban.blocked || 0}</span>
+              <span className="font-mono text-red-700">{metrics?.kanban.blocked ?? 0}</span>
             </div>
           </CardContent>
         </Card>
-        
-      </div>
 
-    {/* Processos BPM Ativos */}
-    <Card className="bg-white border border-slate-200">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5" />
-          Processos BPM em Execução
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {processes.filter(p => p.status === 'active').map((process) => (
-            <div key={process.id} className="p-4 border border-slate-200 rounded-lg bg-white">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-sm text-slate-900">{process.name}</h3>
-                <Badge className="bg-green-100 text-green-800 text-xs">Ativo</Badge>
-              </div>
-
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Instâncias:</span>
-                  <span>{process.totalInstances}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Concluídas:</span>
-                  <span>{process.completedInstances}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Tempo Médio:</span>
-                  <span>{process.avgExecutionTime?.toFixed(1) || 'N/A'}h</span>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {processes.filter(p => p.status === 'active').length === 0 && (
-            <div className="text-center text-slate-500 py-8">
-              Nenhum processo ativo no momento
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-
-    {/* Alertas e Recomendações */}
-    <div className="grid gap-6 md:grid-cols-2">
-      <Card className="bg-white border border-slate-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-amber-600" />
-            Alertas do Sistema
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="p-3 bg-amber-50 border-l-4 border-amber-400 rounded">
-            <div className="text-sm text-amber-800">
-              <strong>Gargalo Detectado:</strong> Atividade de mistura apresenta tempo de espera elevado
-            </div>
-          </div>
-
-          <div className="p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
-            <div className="text-sm text-blue-800">
-              <strong>Oportunidade:</strong> Eficiência pode ser melhorada com otimização de recursos
-            </div>
-          </div>
-
-          <div className="p-3 bg-green-50 border-l-4 border-green-400 rounded">
-            <div className="text-sm text-green-800">
-              <strong>Meta Alcançada:</strong> Taxa de defeitos abaixo da meta estabelecida
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+        {/* Semi-acabados & Quarentena */}
         <Card className="bg-white border border-slate-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-emerald-700" />
-              Recomendações de Melhoria
+            <CardTitle className="flex items-center gap-2 text-emerald-700">
+              <Activity className="h-5 w-5" />
+              Semi-acabados & Quarentena
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="p-3 bg-green-50 rounded-lg">
-              <div className="text-sm text-green-800">
-                <strong>Prioridade Alta:</strong> Implementar automação na atividade de mistura
-              </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-slate-700">Itens de Semi-acabados:</span>
+              <span className="font-mono">{metrics?.semi.items ?? 0}</span>
             </div>
-
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <div className="text-sm text-blue-800">
-                <strong>Otimização:</strong> Redistribuir recursos entre atividades críticas
-              </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-slate-700">Em Quarentena:</span>
+              <span className="font-mono text-amber-700">{metrics?.semi.inQuarantine ?? 0}</span>
             </div>
-
-            <div className="p-3 bg-indigo-50 rounded-lg">
-              <div className="text-sm text-indigo-800">
-                <strong>Treinamento:</strong> Capacitar operadores em técnicas avançadas
-              </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-slate-700">Saldo Total (kg):</span>
+              <span className="font-mono">{(metrics?.semi.saldoTotalKg ?? 0).toFixed(1)}</span>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Botões de Ação */}
-      <div className="flex justify-center gap-4">
-        <Link href="/bpm" className="inline-flex">
-          <Button>
-            <Workflow className="h-4 w-4 mr-2" />
-            Gerenciar BPM
-          </Button>
-        </Link>
-        <Link href="/cep-integration" className="inline-flex">
-          <Button variant="outline">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Análise CEP
-          </Button>
-        </Link>
-        <Link href="/" className="inline-flex">
-          <Button variant="outline">
-            <Package className="h-4 w-4 mr-2" />
-            Kanban
-          </Button>
-        </Link>
+        {/* Qualidade */}
+        <Card className="bg-white border border-slate-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-indigo-700">
+              <BarChart3 className="h-5 w-5" />
+              Qualidade
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-slate-700">Testes Realizados:</span>
+              <span className="font-mono">{metrics?.quality.totalTests ?? 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-slate-700">Reprovados:</span>
+              <span className="font-mono text-red-700">{metrics?.quality.rejectedTests ?? 0}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-slate-700">RNCs Abertas:</span>
+              <span className="font-mono text-amber-700">{metrics?.quality.openNCs ?? 0}</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

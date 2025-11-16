@@ -1,6 +1,8 @@
-'use client'
+ 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+ import { useState, useEffect, useCallback, useMemo } from 'react'
+ import useSWR from 'swr'
+ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -28,8 +30,9 @@ import {
 } from 'lucide-react'
 import { loadProductsAndStats } from '@/lib/product-operations'
 import { useProcessHistory } from '@/hooks/use-process-history'
-import type { Product } from '@/lib/types'
+import type { Product, StageHistory } from '@/lib/types'
 import type { ProductStage, ProductStatus } from '@/lib/types-modern'
+import type { ModOperator } from '@/lib/mod-types'
 import { SkeletonTable } from '@/components/skeletons'
 
 interface MonitoringData {
@@ -44,15 +47,74 @@ interface MonitoringData {
   lastUpdate: string
 }
 
+interface HourlyManualProduction {
+  hour: number
+  label: string
+  totalKg: number
+  opsCount: number
+}
+
+interface ManualProductionRecord {
+  id: string
+  quantity: number
+  createdAt: string
+  createdById?: string
+  notes?: string | null
+  currentStage?: string
+  op?: string
+  batch?: string
+  name?: string
+}
+
+interface ManualOperatorSummary {
+  operadorId: string
+  operadorNome: string
+  totalKg: number
+  opsCount: number
+}
+
+const extractOperadorIdFromRecord = (record: ManualProductionRecord): string | undefined => {
+  if (record.createdById) return record.createdById
+
+  if (record.notes) {
+    const match = record.notes.match(/Operador:\s*([^|]+)/i)
+    if (match) {
+      return match[1].trim()
+    }
+  }
+
+  return undefined
+}
+
 export default function HourlyControlPage() {
   const [monitoringData, setMonitoringData] = useState<MonitoringData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [showFinalReport, setShowFinalReport] = useState(false)
+  const [hourlyManualData, setHourlyManualData] = useState<HourlyManualProduction[]>([])
+  const [manualOperatorData, setManualOperatorData] = useState<ManualOperatorSummary[]>([])
+  const [manualRecentRecords, setManualRecentRecords] = useState<ManualProductionRecord[]>([])
+
+  const { data: modOperatorsData } = useSWR<ModOperator[]>(
+    '/api/mod/operators',
+    async (url: string) => {
+      const res = await fetch(url, { cache: 'no-store' })
+      const json = await res.json()
+      if (!res.ok || !json?.success) throw new Error(json?.error || `Erro ${res.status}`)
+      return json.data as ModOperator[]
+    },
+    {
+      revalidateOnFocus: false,
+    }
+  )
+
+  const modOperators = useMemo(() => modOperatorsData || [], [modOperatorsData])
 
   // Hook de histórico completo de processos
   const { summary, exportHistory } = useProcessHistory()
+
+  const HOURLY_TARGET_KG = 50
 
   // Carregar dados de monitoramento
   const loadMonitoringData = useCallback(async () => {
@@ -61,8 +123,8 @@ export default function HourlyControlPage() {
 
       // Converter produtos em dados de monitoramento
       const monitoring: MonitoringData[] = products.map((product: Product) => {
-        const currentStage = product.stagesHistory?.find(
-          sh => sh.stage === product.currentStage
+        const currentStage = product.stageHistory?.find(
+          (sh: StageHistory) => sh.stage === product.currentStage
         )
 
         const startTime = currentStage?.startTime || product.createdAt
@@ -147,19 +209,129 @@ export default function HourlyControlPage() {
     }
   }
 
+  const getHourlyStatus = (performancePercent: number) => {
+    if (performancePercent >= 100) {
+      return {
+        label: 'No prazo',
+        badgeClass: 'bg-green-100 text-green-800',
+        rowClass: 'bg-green-50/40'
+      }
+    }
+
+    if (performancePercent >= 70) {
+      return {
+        label: 'Atenção',
+        badgeClass: 'bg-yellow-100 text-yellow-800',
+        rowClass: 'bg-yellow-50/40'
+      }
+    }
+
+    return {
+      label: 'Atrasado',
+      badgeClass: 'bg-red-100 text-red-800',
+      rowClass: 'bg-red-50/40'
+    }
+  }
+
+  const loadManualHourlyData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/producao-manual')
+      const result = await response.json()
+
+      if (!result.success || !Array.isArray(result.data)) {
+        setHourlyManualData([])
+        setManualOperatorData([])
+        return
+      }
+
+      const records = result.data as ManualProductionRecord[]
+      const today = new Date()
+      const todayStr = today.toISOString().slice(0, 10)
+
+      const buckets: Record<number, HourlyManualProduction> = {}
+      const operatorBuckets: Record<string, ManualOperatorSummary> = {}
+      const todayRecords: ManualProductionRecord[] = []
+
+      const formatHourLabel = (hour: number): string => {
+        const startHour = hour.toString().padStart(2, '0')
+        const endHour = ((hour + 1) % 24).toString().padStart(2, '0')
+        return `${startHour}:00 - ${endHour}:00`
+      }
+
+      records.forEach((record) => {
+        const createdAt = new Date(record.createdAt)
+        const recordDate = createdAt.toISOString().slice(0, 10)
+
+        if (recordDate !== todayStr) return
+
+        // Guardar registro do dia para histórico das últimas produções
+        todayRecords.push(record)
+
+        const hour = createdAt.getHours()
+        if (!buckets[hour]) {
+          buckets[hour] = {
+            hour,
+            label: formatHourLabel(hour),
+            totalKg: 0,
+            opsCount: 0
+          }
+        }
+
+        buckets[hour].totalKg += record.quantity
+        buckets[hour].opsCount += 1
+
+        const operadorId = extractOperadorIdFromRecord(record)
+        if (!operadorId) return
+
+        if (!operatorBuckets[operadorId]) {
+          const operador = modOperators.find((op) => op.id === operadorId)
+          operatorBuckets[operadorId] = {
+            operadorId,
+            operadorNome: operador?.name ?? `Operador ${operadorId}`,
+            totalKg: 0,
+            opsCount: 0
+          }
+        }
+
+        operatorBuckets[operadorId].totalKg += record.quantity
+        operatorBuckets[operadorId].opsCount += 1
+      })
+
+      const bucketArray = Object.values(buckets).sort((a, b) => a.hour - b.hour)
+      const operatorArray = Object.values(operatorBuckets).sort((a, b) => b.totalKg - a.totalKg)
+
+      const recent = todayRecords
+        .slice()
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 20)
+
+      setHourlyManualData(bucketArray)
+      setManualOperatorData(operatorArray)
+      setManualRecentRecords(recent)
+    } catch (error) {
+      console.error('Erro ao carregar dados manuais para controle hora a hora:', error)
+      setHourlyManualData([])
+      setManualOperatorData([])
+    }
+  }, [modOperators])
+
   useEffect(() => {
     loadMonitoringData()
+    loadManualHourlyData()
 
     // Auto-refresh a cada 30 segundos se habilitado
     let interval: NodeJS.Timeout
     if (autoRefresh) {
-      interval = setInterval(loadMonitoringData, 30000)
+      interval = setInterval(() => {
+        loadMonitoringData()
+        loadManualHourlyData()
+      }, 30000)
     }
 
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [autoRefresh, loadMonitoringData])
+  }, [autoRefresh, loadMonitoringData, loadManualHourlyData])
 
   if (isLoading) {
     return (
@@ -181,6 +353,14 @@ export default function HourlyControlPage() {
     )
   }
 
+  const totalManualKg = hourlyManualData.reduce((sum, slot) => sum + slot.totalKg, 0)
+  const totalManualOps = hourlyManualData.reduce((sum, slot) => sum + slot.opsCount, 0)
+  const hoursWithData = hourlyManualData.length
+  const plannedKgForHours = hoursWithData * HOURLY_TARGET_KG
+  const manualDayPerformance = plannedKgForHours > 0
+    ? (totalManualKg / plannedKgForHours) * 100
+    : 0
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -200,7 +380,10 @@ export default function HourlyControlPage() {
                 Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}
               </div>
               <Button
-                onClick={loadMonitoringData}
+                onClick={() => {
+                  loadMonitoringData()
+                  loadManualHourlyData()
+                }}
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-2"
@@ -299,6 +482,220 @@ export default function HourlyControlPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Produção manual do dia por hora (dados do formulário manual) */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Produção Manual do Dia por Hora
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {hourlyManualData.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                Ainda não há lançamentos manuais de produção para hoje.
+              </p>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-4 text-sm text-gray-600">
+                  <div>
+                    <span className="font-medium">Meta por hora:</span>{' '}
+                    <span>{HOURLY_TARGET_KG.toFixed(1)} kg/h</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Total produzido hoje (manual):</span>{' '}
+                    <span>{totalManualKg.toFixed(1)} kg em {totalManualOps} OPs</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Desempenho vs meta:</span>{' '}
+                    <span className={manualDayPerformance >= 100 ? 'text-green-700' : manualDayPerformance >= 70 ? 'text-yellow-700' : 'text-red-700'}>
+                      {manualDayPerformance.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Faixa Horária</TableHead>
+                        <TableHead>OPs</TableHead>
+                        <TableHead>Produção (kg)</TableHead>
+                        <TableHead>Média kg/OP</TableHead>
+                        <TableHead>Status vs Meta</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {hourlyManualData.map((slot) => {
+                        const hourPerformance = HOURLY_TARGET_KG > 0
+                          ? (slot.totalKg / HOURLY_TARGET_KG) * 100
+                          : 0
+                        const status = getHourlyStatus(hourPerformance)
+
+                        return (
+                          <TableRow key={slot.hour} className={status.rowClass}>
+                            <TableCell>{slot.label}</TableCell>
+                            <TableCell>{slot.opsCount}</TableCell>
+                            <TableCell>{slot.totalKg.toFixed(1)}</TableCell>
+                            <TableCell>
+                              {slot.opsCount > 0
+                                ? (slot.totalKg / slot.opsCount).toFixed(1)
+                                : '0.0'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={status.badgeClass}>
+                                {status.label} ({hourPerformance.toFixed(0)}%)
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Histórico das últimas produções manuais (hoje) */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Últimas produções manuais (hoje)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {manualRecentRecords.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                Ainda não há registros manuais de produção para hoje.
+              </p>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Horário</TableHead>
+                      <TableHead>OP</TableHead>
+                      <TableHead>Lote</TableHead>
+                      <TableHead>Operador</TableHead>
+                      <TableHead>Quantidade (kg)</TableHead>
+                      <TableHead>Etapa</TableHead>
+                      <TableHead>Observações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {manualRecentRecords.map((rec) => {
+                      const createdAt = new Date(rec.createdAt)
+                      const operadorId = extractOperadorIdFromRecord(rec)
+                      const operador = operadorId
+                        ? modOperators.find((op) => op.id === operadorId)
+                        : undefined
+                      const operadorNome = operador?.name || operadorId || '—'
+
+                      return (
+                        <TableRow key={rec.id}>
+                          <TableCell>
+                            {createdAt.toLocaleTimeString('pt-BR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </TableCell>
+                          <TableCell>{rec.op || '—'}</TableCell>
+                          <TableCell>{rec.batch || '—'}</TableCell>
+                          <TableCell>{operadorNome}</TableCell>
+                          <TableCell>{rec.quantity.toFixed(1)}</TableCell>
+                          <TableCell>{rec.currentStage || 'Manual'}</TableCell>
+                          <TableCell className="max-w-xs truncate" title={rec.notes || undefined}>
+                            {rec.notes || '—'}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Produção manual por operador (resumo do dia) */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Desempenho Manual por Operador (Dia)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {manualOperatorData.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                Ainda não há lançamentos manuais associados a operadores para hoje.
+              </p>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Operador</TableHead>
+                      <TableHead>OPs</TableHead>
+                      <TableHead>Produção (kg)</TableHead>
+                      <TableHead>Média kg/OP</TableHead>
+                      <TableHead>% do Total Manual</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {manualOperatorData.map((op) => {
+                      const share = totalManualKg > 0 ? (op.totalKg / totalManualKg) * 100 : 0
+                      const operator = modOperators.find((m) => m.id === op.operadorId)
+                      const baseName = operator?.name || op.operadorNome
+                      const initials = baseName
+                        .split(' ')
+                        .map((n) => n.trim()[0])
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase() || 'MOD'
+                      return (
+                        <TableRow key={op.operadorId}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="h-9 w-9 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden text-[10px] text-slate-500">
+                                {operator?.photo ? (
+                                  <img
+                                    src={operator.photo}
+                                    alt={op.operadorNome}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <span>{initials}</span>
+                                )}
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900">{op.operadorNome}</div>
+                                {operator?.role && (
+                                  <div className="text-xs text-gray-500">{operator.role}</div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{op.opsCount}</TableCell>
+                          <TableCell>{op.totalKg.toFixed(1)}</TableCell>
+                          <TableCell>
+                            {op.opsCount > 0 ? (op.totalKg / op.opsCount).toFixed(1) : '0.0'}
+                          </TableCell>
+                          <TableCell>{share.toFixed(1)}%</TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Relatório Final - aparece quando ativado */}
         {showFinalReport && (

@@ -8,13 +8,20 @@ export async function GET() {
     // Buscar produtos do banco com Prisma
     const products = await prisma.product.findMany()
 
-    // Calcular estatísticas
+    // Calcular estatísticas com normalização de tipos
     const stats = {
       total: products.length,
-      inProgress: products.filter((p) => p.status === 'ACTIVE' && p.currentStage !== 'BACKLOG' && p.currentStage !== 'APROVADO').length,
-      paused: products.filter((p) => p.status === 'PAUSED').length,
-      completed: products.filter((p) => p.currentStage === 'APROVADO' || p.currentStage === 'REJEITADO').length,
-      blocked: products.filter((p) => p.status === 'BLOCKED').length,
+      inProgress: products.filter((p) => {
+        const status = String(p.status).toUpperCase()
+        const stage = String(p.currentStage).toUpperCase()
+        return status === 'ACTIVE' && stage !== 'BACKLOG' && stage !== 'APROVADO'
+      }).length,
+      paused: products.filter((p) => String(p.status).toUpperCase() === 'PAUSED').length,
+      completed: products.filter((p) => {
+        const stage = String(p.currentStage).toUpperCase()
+        return stage === 'APROVADO' || stage === 'REJEITADO'
+      }).length,
+      blocked: products.filter((p) => String(p.status).toUpperCase() === 'BLOCKED').length,
     }
 
     console.log('=== API STATS: Estatísticas calculadas:', stats)

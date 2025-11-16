@@ -20,17 +20,28 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { productId, name, family, op, batch, quantity_total } = body || {}
-    if (!productId || !name || !family || !op || !batch || !quantity_total) {
+    if (!name || !family || !op || !batch || !quantity_total) {
       return NextResponse.json({ success: false, error: 'Campos obrigatórios ausentes' }, { status: 400 })
+    }
+
+    // Regra de negócio: não permitir OP + Lote duplicados em Semi-Acabados
+    const dupCheck = db.prepare('SELECT id FROM semi_finished_items WHERE op = ? AND batch = ? LIMIT 1')
+    const existing = dupCheck.get(op, batch) as { id: string } | undefined
+    if (existing) {
+      return NextResponse.json(
+        { success: false, error: 'Já existe um produto de Semi-Acabados com esta OP e lote.' },
+        { status: 400 }
+      )
     }
 
     const now = new Date().toISOString()
     const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
+    const semiProductId = productId || `legacy-${op}-${batch}`
     const insert = db.prepare(`
       INSERT INTO semi_finished_items (id, productId, name, family, op, batch, quantity_total, quantity_envasado, status, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'aguardando', ?, ?)
     `)
-    insert.run(id, productId, name, family, op, batch, Number(quantity_total), now, now)
+    insert.run(id, semiProductId, name, family, op, batch, Number(quantity_total), now, now)
 
     const sel = db.prepare('SELECT * FROM semi_finished_items WHERE id = ?')
     const created = sel.get(id)

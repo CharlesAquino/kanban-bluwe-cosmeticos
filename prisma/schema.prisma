@@ -54,8 +54,8 @@ model Product {
   op            String   @unique // Ordem de produção única
   batch         String   // Lote
   quantity      Float    // Quantidade em kg
-  currentStage  String   @default("producao_1kg")
-  status        String   @default("active")
+  currentStage  ProductStage @default(PRODUCAO_1KG)
+  status        ProductStatus @default(ACTIVE)
   priority      Int      @default(1)
   dueDate       DateTime?
   notes         String?

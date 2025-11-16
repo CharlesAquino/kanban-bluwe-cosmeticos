@@ -1,66 +1,8 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/tabs'
-import {
-  Plus,
-  BarChart3,
-  Calculator,
-  Activity,
-  TrendingUp,
-  Settings,
-  Target
-} from 'lucide-react'
-import { ControlChart } from '@/components/control-chart'
-import { ProcessCapability } from '@/components/process-capability'
-import type { ControlChartType } from '@/lib/types'
-
-interface CEPChart {
-  id: string
-  name: string
-  chartType: ControlChartType
-  characteristic: string
-  isActive: boolean
-  createdAt: string
-}
-
-interface CEPData {
-  data: any[]
-  stats: any
-  limits: any
-  violations: number[]
-  rules: string[]
-}
+import { redirect } from 'next/navigation'
 
 export default function CEPPage() {
-  const [charts, setCharts] = useState<CEPChart[]>([])
-  const [selectedChart, setSelectedChart] = useState<string>('')
-  const [chartData, setChartData] = useState<CEPData | null>(null)
-  const [capabilityData, setCapabilityData] = useState<any>(null)
-  const [loading, setLoading] = useState(false)
-
-  // Formulário para nova carta
-  const [newChart, setNewChart] = useState({
-    name: '',
-    chartType: 'x_bar_r' as ControlChartType,
-    characteristic: '',
-    sampleSize: 5,
-    frequency: 1
-  })
-
-  // Dados de teste para demonstração
-  const [testData, setTestData] = useState<number[]>([])
-
-  useEffect(() => {
-    loadCharts()
-  }, [])
-
+  redirect('/dashboard')
+}
   const loadCharts = async () => {
     try {
       const response = await fetch('/api/cep/charts')

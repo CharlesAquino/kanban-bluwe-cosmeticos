@@ -42,10 +42,10 @@ export const SHIFT_LABELS: Record<Shift, string> = {
 // ========== ESTÁGIOS DE PRODUÇÃO ==========
 export const STAGE_LABELS: Record<ProductStage, string> = {
   BACKLOG: 'Backlog',
-  PRODUCAO_1KG: 'Produção de 1,0 kg',
-  AVALIACAO_COR: 'Validação de Cor',
-  PRODUCAO_5KG: 'Produção de 5,0 kg',
-  AVALIACAO_FINAL: 'Validação Final',
+  PRODUCAO_1KG: 'Produção 1kg',
+  AVALIACAO_COR: 'Análise C.Q.',
+  PRODUCAO_5KG: 'Produção Reator',
+  AVALIACAO_FINAL: 'Análise Reator',
   APROVADO: 'Aprovado',
   REJEITADO: 'Rejeitado',
 } as const

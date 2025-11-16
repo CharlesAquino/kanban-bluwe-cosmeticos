@@ -278,12 +278,31 @@ export async function loadProductsAndStats(): Promise<{
   if (!json.success) throw new Error(json.error || 'Falha ao carregar produtos')
   const products = json.data || []
 
+  // Buscar também itens de Semi-Acabados para compor o total de concluídos
+  let semiFinishedCount = 0
+  try {
+    const semiJson = await apiFetch<{ success: boolean; data: unknown[]; error?: string }>('/api/semi-finished', {
+      cache: 'no-store',
+    })
+    if (semiJson.success && Array.isArray(semiJson.data)) {
+      semiFinishedCount = semiJson.data.length
+    }
+  } catch (e) {
+    console.warn('Falha ao carregar semi-acabados para stats, usando 0:', e)
+  }
+
+  const inProgress = products.filter((p) => String(p.status).toUpperCase() === 'ACTIVE').length
+  const paused = products.filter((p) => String(p.status).toUpperCase() === 'PAUSED').length
+  const blocked = products.filter((p) => String(p.status).toUpperCase() === 'BLOCKED').length
+  const completedFromProducts = products.filter((p) => String(p.status).toUpperCase() === 'COMPLETED').length
+  const completed = completedFromProducts + semiFinishedCount
+
   const stats = {
     total: products.length,
-    inProgress: products.filter((p) => String(p.status).toLowerCase() === 'active').length,
-    paused: products.filter((p) => String(p.status).toLowerCase() === 'paused').length,
-    blocked: products.filter((p) => String(p.status).toLowerCase() === 'blocked').length,
-    completed: products.filter((p) => String(p.currentStage).toLowerCase() === 'finalizado').length,
+    inProgress,
+    paused,
+    completed,
+    blocked,
   }
 
   return { products, stats }

@@ -1,51 +1,8 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
-import {
-  Activity,
-  TrendingUp,
-  Target,
-  BarChart3,
-  RefreshCw,
-  CheckCircle,
-  AlertTriangle
-} from 'lucide-react'
-import { useGlobalData, useGlobalActions } from '@/contexts/global-context'
+import { redirect } from 'next/navigation'
 
 export default function CEPIntegrationPage() {
-  const { products, cepData, lastUpdate, loading, error } = useGlobalData()
-  const { refreshData } = useGlobalActions()
-
-  const [isLoading, setIsLoading] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const [stalled, setStalled] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Watchdog: se o carregamento global durar muito, indicar atraso ao usuário
-  useEffect(() => {
-    if (!loading) {
-      setStalled(false)
-      return
-    }
-    const t = setTimeout(() => setStalled(true), 8000)
-    return () => clearTimeout(t)
-  }, [loading])
-
-  const handleRefresh = async () => {
-    setIsLoading(true)
-    await refreshData()
-    setIsLoading(false)
-  }
-
-  // Evitar erro de hidratação mostrando timestamp apenas após montagem
-  const displayLastUpdate = mounted
+  redirect('/dashboard')
+}
     ? new Date(lastUpdate).toLocaleString('pt-BR')
     : 'Carregando...'
 
@@ -74,12 +31,6 @@ export default function CEPIntegrationPage() {
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                 Atualizar
               </Button>
-              <Link href="/" prefetch={false} className="inline-flex">
-                <Button variant="outline" size="sm">
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  Voltar ao Kanban
-                </Button>
-              </Link>
             </div>
           </div>
         </div>

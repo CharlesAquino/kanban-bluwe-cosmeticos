@@ -1,6 +1,6 @@
 'use client'
 
-import React, { memo } from 'react'
+import React, { memo, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,11 +13,14 @@ import {
   Trash2,
   Users,
   Package,
-  CheckCircle
+  CheckCircle,
+  QrCode
 } from 'lucide-react'
 import type { Product, HourlyControl, StageHistory } from '@/lib/types'
 import { STAGE_LABELS, EFFICIENCY_STATUS_COLORS, EFFICIENCY_STATUS_LABELS } from '@/lib/types'
 import { getStatusUI } from '@/lib/status-utils'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import QRCode from 'react-qr-code'
 
 interface KanbanCardProps {
   product: Product
@@ -28,6 +31,8 @@ interface KanbanCardProps {
   onResumeProduction: (id: string) => void
   onBlockProduction: (id: string, reason: string) => void
   onDeleteProduct: (id: string) => void
+  onFinalize: (id: string) => void
+  modOperatorLabel?: string | null
 }
 
 const KanbanCardBase = ({
@@ -38,8 +43,11 @@ const KanbanCardBase = ({
   onPauseProduction,
   onResumeProduction,
   onBlockProduction,
-  onDeleteProduct
+  onDeleteProduct,
+  onFinalize,
+  modOperatorLabel,
 }: KanbanCardProps) => {
+  const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const {
     attributes,
     listeners,
@@ -66,6 +74,10 @@ const KanbanCardBase = ({
 
   const latestHourlyControl = getLatestHourlyControl(product)
 
+  const normalizedStage = String(product.currentStage).toUpperCase()
+  const isLegacyFinalStage = normalizedStage === 'FINALIZADO'
+  const isFinalizableStage = normalizedStage === 'APROVADO' || isLegacyFinalStage
+
   const handleBlockProduction = () => {
     const reason = prompt('Motivo do bloqueio:', '')
     if (reason) {
@@ -81,13 +93,10 @@ const KanbanCardBase = ({
     }
   }
 
-  const handleFinalize = async () => {
-    try {
-      const res = await (await import('@/lib/product-operations')).finalizeProduct(product.id)
-      if (!res.success) throw new Error(res.error || 'Falha ao finalizar')
-      alert('Produto enviado para Semi-Acabados!')
-    } catch (e) {
-      alert(`Erro ao finalizar: ${e instanceof Error ? e.message : 'desconhecido'}`)
+  const handleFinalize = () => {
+    const confirmed = confirm('Finalizar este produto e enviar para Semi-Acabados?')
+    if (confirmed) {
+      onFinalize(product.id)
     }
   }
 
@@ -118,19 +127,53 @@ const KanbanCardBase = ({
               <span className="font-medium truncate">Lote:</span>
               <span className="truncate">{product.batch}</span>
             </div>
+            {modOperatorLabel && (
+              <div className="flex items-center gap-1 text-[11px] text-gray-500 mt-0.5">
+                <Users className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">Responsável: {modOperatorLabel}</span>
+              </div>
+            )}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-1 h-6 w-6 text-gray-400 hover:text-red-500 hover:bg-red-50 flex-shrink-0 ml-1"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDeleteProduct()
-            }}
-            title="Excluir produto"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+          <div className="flex gap-1 flex-shrink-0">
+            <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-1 h-6 w-6 text-gray-400 hover:text-blue-500 hover:bg-blue-50 flex-shrink-0"
+                  title="QR Code da OP"
+                >
+                  <QrCode className="h-3 w-3" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>QR Code da OP {product.op}</DialogTitle>
+                </DialogHeader>
+                <div className="flex justify-center p-4">
+                  <QRCode
+                    value={`${window.location.origin}/semi-finished-overview`}
+                    size={200}
+                  />
+                </div>
+                <p className="text-sm text-center text-muted-foreground">
+                  Escaneie para visualizar todos os Semi-Acabados
+                </p>
+              </DialogContent>
+            </Dialog>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 h-6 w-6 text-gray-400 hover:text-red-500 hover:bg-red-50 flex-shrink-0 ml-1"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleDeleteProduct()
+              }}
+              title="Excluir produto"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
 
         {/* Informações principais */}
@@ -206,8 +249,8 @@ const KanbanCardBase = ({
             })()}
           </div>
 
-          {/* Ações (exceto no estágio finalizado) */}
-          {product.currentStage !== 'finalizado' && (
+          {/* Ações (exceto no estágio FINALIZADO legado) */}
+          {!isLegacyFinalStage && (
             <div className="flex gap-1 flex-shrink-0">
               {String(product.status).toLowerCase() === 'active' && (
                 <Button
@@ -256,8 +299,8 @@ const KanbanCardBase = ({
           )}
         </div>
 
-        {/* Botão Finalizar sobreposto */}
-        {product.currentStage === 'finalizado' && (
+        {/* Botão Finalizar sobreposto (estágio APROVADO ou FINALIZADO legado) */}
+        {isFinalizableStage && (
           <div className="absolute bottom-2 right-2">
             <Button
               size="sm"

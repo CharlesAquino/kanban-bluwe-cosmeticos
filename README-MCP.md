@@ -7,18 +7,22 @@ Este projeto implementa servidores MCP (Model Context Protocol) para integraçã
 ## 🔧 MCPs Disponíveis
 
 ### 1. OpenAI MCP - Assistente Inteligente
+
 - **Função**: Processamento de linguagem natural
 - **Uso**: Análise de dados, sugestões, automação
 
 ### 2. Slack MCP - Notificações
+
 - **Função**: Envio de alertas e mensagens
 - **Uso**: Notificações de produção, alertas de qualidade
 
 ### 3. GitHub MCP - Issues/PRs
+
 - **Função**: Gerenciamento de issues e pull requests
 - **Uso**: Rastreamento de bugs, feature requests
 
 ### 4. Playwright MCP - Screenshots
+
 - **Função**: Captura de screenshots e validação visual
 - **Uso**: Testes visuais, documentação
 
@@ -86,11 +90,13 @@ await slack.sendNotification({ message: "Produção atualizada" })
 ## 📊 Monitoramento
 
 ### Logs dos MCPs
+
 - Arquivo: `logs/mcp.log`
 - Níveis: INFO, WARN, ERROR
 - Rotação automática
 
 ### Status Dashboard
+
 - URL: `http://localhost:3002/mcp-status`
 - Status em tempo real
 - Métricas de performance
@@ -98,12 +104,15 @@ await slack.sendNotification({ message: "Produção atualizada" })
 ## 🛠️ Troubleshooting
 
 ### Problema: "MCP connection timeout"
+
 **Solução:** Verifique se servidor MCP está rodando
 
 ### Problema: "API key invalid"
+
 **Solução:** Verifique variáveis de ambiente no `.env.local`
 
 ### Problema: "Rate limit exceeded"
+
 **Solução:** Implemente rate limiting ou upgrade plano
 
 ## 🔒 Segurança

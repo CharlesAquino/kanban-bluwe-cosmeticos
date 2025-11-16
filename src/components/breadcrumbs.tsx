@@ -12,7 +12,7 @@ export function Breadcrumbs() {
     <nav aria-label="breadcrumbs" className="text-sm text-slate-600">
       <ol className="flex items-center gap-2 flex-wrap">
         <li>
-          <Link href="/" className="hover:underline text-slate-700">Home</Link>
+          <Link href="/home" className="hover:underline text-slate-700">Home</Link>
         </li>
         {segments.map((seg, i) => (
           <li key={i} className="flex items-center gap-2">

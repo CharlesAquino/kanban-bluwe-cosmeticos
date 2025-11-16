@@ -75,7 +75,7 @@ function ensureSchema(connection: Database.Database) {
     if (!hasFamily) {
       connection.exec(`ALTER TABLE products ADD COLUMN family TEXT`)
     }
-  } catch (e) {
+  } catch {
     // noop: se falhar, a inserção tratará e veremos nos logs
   }
 
@@ -158,6 +158,46 @@ function ensureSchema(connection: Database.Database) {
       timestamp TEXT NOT NULL
     )
   `)
+
+  // Operadores (MOD)
+  connection.exec(`
+    CREATE TABLE IF NOT EXISTS mod_operators (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      role TEXT,
+      isActive INTEGER NOT NULL DEFAULT 1,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
+    )
+  `)
+
+  // Migração: adicionar coluna de foto do operador, se ainda não existir
+  try {
+    const modCols = connection.prepare(`PRAGMA table_info(mod_operators)`).all() as Array<{ name: string }>
+    const hasPhoto = modCols.some((c) => c.name === 'photo')
+    if (!hasPhoto) {
+      connection.exec(`ALTER TABLE mod_operators ADD COLUMN photo TEXT`)
+    }
+  } catch {
+    // noop
+  }
+
+  // Atividades de MOD (produção / administrativas)
+  connection.exec(`
+    CREATE TABLE IF NOT EXISTS mod_activities (
+      id TEXT PRIMARY KEY,
+      operatorId TEXT NOT NULL,
+      type TEXT NOT NULL,
+      description TEXT NOT NULL,
+      productId TEXT,
+      startedAt TEXT NOT NULL,
+      endedAt TEXT,
+      createdAt TEXT NOT NULL,
+      FOREIGN KEY (operatorId) REFERENCES mod_operators(id)
+    )
+  `)
+
+  connection.exec(`CREATE INDEX IF NOT EXISTS idx_mod_activities_operator ON mod_activities(operatorId);`)
 
   // Migração simples de estágios antigos -> novos
   // Mapas:

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import useSWR from 'swr'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Beaker, CheckCircle, XCircle, Plus } from 'lucide-react'
 import { useGlobalData } from '@/contexts/global-context'
+import { SemiItem, semiFinishedFetcher } from '@/lib/semi-finished-lib'
 
 interface QualityTestFormProps {
   onTestAdded?: () => void
@@ -18,6 +20,10 @@ interface QualityTestFormProps {
 
 export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
   const { products } = useGlobalData()
+  const { data: semiItemsData } = useSWR<SemiItem[]>('/api/semi-finished', semiFinishedFetcher, {
+    revalidateOnFocus: false,
+  })
+  const semiItems = semiItemsData || []
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -36,10 +42,17 @@ export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
   const parameterSpecs = {
     pH: { target: 5.5, min: 5.2, max: 5.8, unit: 'pH', description: 'pH ideal para produtos cosméticos' },
     viscosidade: { target: 1200, min: 1000, max: 1400, unit: 'cps', description: 'Viscosidade em centipoise' },
-    cor: { target: 0, min: -5, max: 5, unit: 'ΔE', description: 'Diferença de cor (Delta E)' },
+    // Delta E (cor): limite 1.7, atenção a partir de 1.4
+    cor: {
+      target: 0,
+      min: 0,
+      max: 1.7,
+      unit: 'ΔE',
+      description: 'Diferença de cor (ΔE). Até 1,4: dentro da meta. Entre 1,4 e 1,7: atenção. Acima de 1,7: reprovado.',
+    },
     densidade: { target: 1.0, min: 0.9, max: 1.1, unit: 'g/cm³', description: 'Densidade do produto' },
     estabilidade: { target: 100, min: 95, max: 100, unit: '%', description: 'Estabilidade física (%)' },
-    pureza: { target: 99, min: 98, max: 100, unit: '%', description: 'Pureza do ativo (%)' }
+    pureza: { target: 99, min: 98, max: 100, unit: '%', description: 'Pureza do ativo (%)' },
   }
 
   type ParamKey = keyof typeof parameterSpecs
@@ -52,15 +65,30 @@ export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
     }))
   }
 
-  const handleProductChange = (productId: string) => {
-    const product = products.find(p => p.id === productId)
-    if (product) {
-      setFormData(prev => ({
-        ...prev,
-        productId,
-        batch: product.batch || '',
-        stage: product.currentStage
-      }))
+  const handleProductChange = (value: string) => {
+    const [source, rawId] = value.split(':') as ['kanban' | 'semi', string]
+
+    if (source === 'kanban') {
+      const product = products.find((p) => p.id === rawId)
+      if (product) {
+        setFormData((prev) => ({
+          ...prev,
+          productId: product.id,
+          batch: product.batch || '',
+          stage: (product as any).currentStage ?? '',
+        }))
+      }
+    } else if (source === 'semi') {
+      const item = semiItems.find((s) => s.id === rawId)
+      if (item) {
+        // Vincula a análise ao productId original, mas marca o estágio como semi-acabado
+        setFormData((prev) => ({
+          ...prev,
+          productId: item.productId,
+          batch: item.batch || '',
+          stage: 'SEMI_ACABADO',
+        }))
+      }
     }
   }
 
@@ -69,7 +97,9 @@ export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
     setIsSubmitting(true)
 
     try {
-      const product = products.find(p => p.id === formData.productId)
+      const product =
+        products.find((p) => p.id === formData.productId) ||
+        semiItems.find((s) => s.productId === formData.productId)
       const specs = parameterSpecs[formData.parameter]
 
       const payload = {
@@ -131,8 +161,12 @@ export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
 
   const specs = parameterSpecs[formData.parameter]
   const measuredValue = parseFloat(formData.measuredValue)
-  const isApproved = !isNaN(measuredValue) &&
-    measuredValue >= specs.min &&
+  const isApproved =
+    !isNaN(measuredValue) && measuredValue >= specs.min && measuredValue <= specs.max
+  const isAttention =
+    formData.parameter === 'cor' &&
+    !isNaN(measuredValue) &&
+    measuredValue >= 1.4 &&
     measuredValue <= specs.max
 
   return (
@@ -156,14 +190,22 @@ export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="product">Produto</Label>
-              <Select value={formData.productId} onValueChange={handleProductChange}>
+              <Select
+                value={formData.productId ? `kanban:${formData.productId}` : ''}
+                onValueChange={handleProductChange}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o produto" />
                 </SelectTrigger>
                 <SelectContent>
                   {products.map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      {product.name} - {product.op}
+                    <SelectItem key={product.id} value={`kanban:${product.id}`}>
+                      [Kanban] {product.name} - {product.op}
+                    </SelectItem>
+                  ))}
+                  {semiItems.map((item) => (
+                    <SelectItem key={item.id} value={`semi:${item.id}`}>
+                      [Semi] {item.name} - {item.op}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -253,10 +295,17 @@ export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
                   {isNaN(measuredValue) ? (
                     <Badge variant="outline">Aguardando medição</Badge>
                   ) : isApproved ? (
-                    <Badge className="bg-green-100 text-green-800 border-green-200">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Aprovado
-                    </Badge>
+                    isAttention && formData.parameter === 'cor' ? (
+                      <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Aprovado (Atenção)
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Aprovado
+                      </Badge>
+                    )
                   ) : (
                     <Badge className="bg-red-100 text-red-800 border-red-200">
                       <XCircle className="h-3 w-3 mr-1" />
@@ -281,7 +330,17 @@ export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
                 </div>
                 <div>
                   <p className="text-gray-600">Medido</p>
-                  <p className={`font-semibold ${isApproved ? 'text-green-600' : 'text-red-600'}`}>
+                  <p
+                    className={`font-semibold ${
+                      isNaN(measuredValue)
+                        ? 'text-slate-600'
+                        : isApproved
+                        ? isAttention && formData.parameter === 'cor'
+                          ? 'text-amber-600'
+                          : 'text-green-600'
+                        : 'text-red-600'
+                    }`}
+                  >
                     {formData.measuredValue || '-'} {specs.unit}
                   </p>
                 </div>

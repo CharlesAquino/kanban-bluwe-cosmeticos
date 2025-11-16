@@ -27,6 +27,8 @@ interface KanbanColumnProps {
   onResumeProduction: (id: string) => void
   onBlockProduction: (id: string, reason: string) => void
   onDeleteProduct: (id: string) => void
+  onFinalizeProduct: (id: string) => void
+  getModOperatorLabel?: (product: Product) => string | null
 }
 
 export const KanbanColumn = memo(KanbanColumnBase)
@@ -50,6 +52,8 @@ function KanbanColumnBase({
   onResumeProduction,
   onBlockProduction,
   onDeleteProduct,
+  onFinalizeProduct,
+  getModOperatorLabel,
 }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: id,
@@ -106,6 +110,8 @@ function KanbanColumnBase({
             onResumeProduction={onResumeProduction}
             onBlockProduction={onBlockProduction}
             onDeleteProduct={onDeleteProduct}
+            onFinalize={onFinalizeProduct}
+            modOperatorLabel={getModOperatorLabel ? getModOperatorLabel(product) : null}
           />
         ))}
       </div>

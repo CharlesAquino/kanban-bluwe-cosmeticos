@@ -74,6 +74,7 @@ export interface Product {
   status: ProductStatus
   createdAt: string
   updatedAt: string
+  createdById?: string
   stageHistory: StageHistory[]
   // Novo campo para integração com controle hora a hora
   hourlyControls?: HourlyControl[]

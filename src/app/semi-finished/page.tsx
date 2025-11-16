@@ -1,169 +1,281 @@
 "use client"
 
 import useSWR, { mutate } from 'swr'
-import { useMemo, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Send, PackageCheck, Undo2, Loader2 } from 'lucide-react'
-
-type SemiItem = {
-  id: string
-  name: string
-  family: string
-  op: string
-  batch: string
-  quantity_total: number
-  quantity_envasado: number
-  status: string
-}
-
-type Bucket = {
-  id: string
-  semiFinishedId: string
-  bucketIndex: number
-  originalQuantityKg: number
-  currentQuantityKg: number
-  status: string
-}
-
-const fetcher = async (url: string) => {
-  const res = await fetch(url, { cache: 'no-store' })
-  const json = await res.json()
-  if (!res.ok || !json?.success) throw new Error(json?.error || `Erro ${res.status}`)
-  return json.data
-}
-
-function useBuckets(itemId: string) {
-  const { data, isLoading, error, mutate: m } = useSWR<Bucket[]>(`/api/semi-finished/${itemId}/buckets`, fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    refreshInterval: 15000,
-    keepPreviousData: true,
-  })
-  return { buckets: data || [], loading: isLoading, error, refresh: () => m() }
-}
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Send, PackageCheck, Undo2, Loader2, Trash2, Settings2, Layers, Droplet, TrendingUp } from 'lucide-react'
+import { SemiItem, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor } from '@/lib/semi-finished-lib'
 
 export default function SemiFinishedPage() {
-  const { data, error, isLoading } = useSWR<SemiItem[]>('/api/semi-finished', fetcher, {
+  const { data, error, isLoading } = useSWR<SemiItem[]>('/api/semi-finished', semiFinishedFetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     refreshInterval: 15000,
     keepPreviousData: true,
   })
-
-  const items = data || []
+  const items = useMemo(() => data || [], [data])
   const [selectedProduct, setSelectedProduct] = useState<SemiItem | null>(null)
+  const [legacyName, setLegacyName] = useState('')
+  const [legacyFamily, setLegacyFamily] = useState('')
+  const [legacyOp, setLegacyOp] = useState('')
+  const [legacyBatch, setLegacyBatch] = useState('')
+  const [legacyQty, setLegacyQty] = useState('')
+  const [legacyBusy, setLegacyBusy] = useState(false)
+  const [legacyError, setLegacyError] = useState<string | null>(null)
 
   const groups = useMemo(() => {
     return items.reduce((acc, it) => {
-      const k = it.family || 'Sem Família'
-      if (!acc[k]) acc[k] = [] as SemiItem[]
-      acc[k].push(it)
+      const key = it.family || 'Sem Família'
+      if (!acc[key]) acc[key] = [] as SemiItem[]
+      acc[key].push(it)
       return acc
     }, {} as Record<string, SemiItem[]>)
   }, [items])
 
-  // Organizar produtos por família em fileiras horizontais
   const organizedGroups = useMemo(() => {
     const result: Record<string, SemiItem[][]> = {}
-    const itemsPerRow = 2 // Máximo de produtos por fileira para melhor aproveitamento do espaço
+    const perRow = 3
 
     Object.entries(groups).forEach(([family, products]) => {
       result[family] = []
-      for (let i = 0; i < products.length; i += itemsPerRow) {
-        result[family].push(products.slice(i, i + itemsPerRow))
+      for (let i = 0; i < products.length; i += perRow) {
+        result[family].push(products.slice(i, i + perRow))
       }
     })
 
     return result
   }, [groups])
 
+  const dashboardStats = useMemo(() => {
+    const totalProdutos = items.length
+    const aguardando = items.filter((item) => item.status === 'aguardando').length
+    const totalSaldo = items.reduce((sum, item) => sum + (Number(item.quantity_total) - Number(item.quantity_envasado)), 0)
+    const familias = Object.keys(groups).length
+
+    return { totalProdutos, aguardando, totalSaldo, familias }
+  }, [items, groups])
+
+  const handleLegacyInsert = async () => {
+    try {
+      setLegacyBusy(true)
+      setLegacyError(null)
+      const qty = Number(legacyQty)
+      if (!Number.isFinite(qty) || qty <= 0) {
+        setLegacyError('Quantidade inválida')
+        setLegacyBusy(false)
+        return
+      }
+      const res = await fetch('/api/semi-finished', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: legacyName,
+          family: legacyFamily,
+          op: legacyOp,
+          batch: legacyBatch,
+          quantity_total: qty,
+        }),
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        setLegacyError(json?.error || 'Erro ao inserir produto legado')
+      } else {
+        setLegacyName('')
+        setLegacyFamily('')
+        setLegacyOp('')
+        setLegacyBatch('')
+        setLegacyQty('')
+        mutate('/api/semi-finished')
+      }
+    } catch {
+      setLegacyError('Erro ao inserir produto legado')
+    } finally {
+      setLegacyBusy(false)
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
-      <h1 className="text-2xl font-bold text-slate-800 mb-4">Kanban de Semi-Acabados</h1>
-
-      {isLoading && <div className="text-slate-500">Carregando...</div>}
-      {error && <div className="text-red-600">Erro: {(error as Error).message}</div>}
-
-      <div className="space-y-6">
-        {Object.entries(organizedGroups).map(([family, rows], familyIndex) => (
-          <div 
-            key={family} 
-            className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500"
-            style={{ animationDelay: `${familyIndex * 100}ms` }}
-          >
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-slate-800">{family}</h2>
-              <Badge className="bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700 ring-1 ring-slate-200/50">
-                {rows.flat().length} produto{rows.flat().length !== 1 ? 's' : ''}
-              </Badge>
-            </div>
-
-            {rows.map((rowProducts, rowIndex) => (
-              <div 
-                key={rowIndex} 
-                className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-left-2 duration-300"
-                style={{ animationDelay: `${familyIndex * 100 + rowIndex * 50}ms` }}
-              >
-                {rowProducts.map((product, productIndex) => (
-                  <div
-                    key={product.id}
-                    className="animate-in zoom-in-95 duration-200"
-                    style={{ animationDelay: `${familyIndex * 100 + rowIndex * 50 + productIndex * 25}ms` }}
-                  >
-                    <CompactItemCard 
-                      product={product} 
-                      onManage={() => setSelectedProduct(product)}
-                    />
-                  </div>
-                ))}
-              </div>
-            ))}
+    <div className="min-h-screen bg-gradient-to-br from-sky-100 via-white to-sky-50 text-slate-900">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 space-y-8">
+        <section className="space-y-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.35em] text-sky-600/80 mb-2">Painel Administrativo</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Kanban de Semi-Acabados</h1>
+            <p className="text-sm text-slate-600 mt-1">
+              Gerencie o estoque intermediário, acompanhe saldos e mantenha o fluxo pós-produção organizado.
+            </p>
           </div>
-        ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard label="Produtos ativos" value={dashboardStats.totalProdutos} icon={<Layers className="h-4 w-4" />} accent="from-sky-500/30 to-sky-500/5" />
+            <MetricCard label="Aguardando ação" value={dashboardStats.aguardando} icon={<Settings2 className="h-4 w-4" />} accent="from-amber-400/40 to-amber-400/10" />
+            <MetricCard label="Saldo disponível" value={`${dashboardStats.totalSaldo.toFixed(1)} kg`} icon={<Droplet className="h-4 w-4" />} accent="from-emerald-400/40 to-emerald-400/10" />
+            <MetricCard label="Famílias" value={dashboardStats.familias} icon={<TrendingUp className="h-4 w-4" />} accent="from-indigo-400/40 to-indigo-400/10" />
+          </div>
+        </section>
+
+        <section>
+          <Card className="bg-white/80 border border-sky-100 shadow-xl">
+            <div className="p-5 space-y-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-sky-600/80">Produtos legados</p>
+                <h2 className="text-lg font-semibold text-slate-900">Adicionar item existente</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                <LegacyInput id="legacy-name" label="Nome" value={legacyName} onChange={setLegacyName} placeholder="Nome do produto" />
+                <LegacyInput id="legacy-family" label="Família" value={legacyFamily} onChange={setLegacyFamily} placeholder="Linha / família" />
+                <LegacyInput id="legacy-op" label="OP" value={legacyOp} onChange={setLegacyOp} placeholder="OP" />
+                <LegacyInput id="legacy-batch" label="Lote" value={legacyBatch} onChange={setLegacyBatch} placeholder="Lote" />
+                <div className="space-y-1">
+                  <Label htmlFor="legacy-qty" className="text-xs text-slate-600">
+                    Qtd (kg)
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="legacy-qty"
+                      type="number"
+                      step="0.1"
+                      value={legacyQty}
+                      onChange={(e) => setLegacyQty(e.target.value)}
+                      placeholder="0.0"
+                      className="h-9 text-xs bg-white border border-slate-200 text-slate-900"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-9 text-xs px-3 bg-gradient-to-r from-sky-500 to-blue-500"
+                      disabled={legacyBusy || !legacyName || !legacyFamily || !legacyOp || !legacyBatch || !legacyQty}
+                      onClick={handleLegacyInsert}
+                    >
+                      {legacyBusy ? 'Salvando...' : 'Inserir'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              {legacyError && <p className="text-xs text-red-500">{legacyError}</p>}
+            </div>
+          </Card>
+        </section>
+
+        {isLoading && <div className="text-xs text-slate-500">Carregando semi-acabados...</div>}
+        {error && <div className="text-xs text-red-500">Erro ao carregar semi-acabados: {(error as Error).message}</div>}
+
+        <section className="space-y-6">
+          {Object.entries(organizedGroups).map(([family, rows]) => (
+            <div key={family} className="space-y-4">
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-sky-100 bg-white/70 backdrop-blur px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-9 rounded-full bg-gradient-to-b from-sky-400 to-blue-500" />
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Família</p>
+                    <h2 className="text-base font-semibold text-slate-900">{family}</h2>
+                  </div>
+                </div>
+                <Badge className="bg-sky-600/10 text-sky-800 border border-sky-200 px-2.5 py-1 text-[11px] rounded-full">
+                  {rows.flat().length} produto{rows.flat().length !== 1 ? 's' : ''}
+                </Badge>
+              </div>
+
+              {rows.map((rowProducts, rowIndex) => (
+                <div key={`${family}-${rowIndex}`} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {rowProducts.map((product) => (
+                    <CompactItemCard key={product.id} product={product} onManage={() => setSelectedProduct(product)} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+        </section>
       </div>
 
-      {/* Modal de gerenciamento detalhado */}
       {selectedProduct && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white">
-              <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                Gerenciar: {selectedProduct.name}
-              </h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-[0_25px_60px_-20px_rgba(15,23,42,0.4)] max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-gradient-to-r from-sky-50 to-white">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Gerenciar</p>
+                <h3 className="text-lg font-semibold text-slate-900">{selectedProduct.name}</h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setSelectedProduct(null)}
-                className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full w-8 h-8 p-0 transition-all duration-200 hover:rotate-90"
+                className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full w-9 h-9 p-0 transition-all"
               >
                 ✕
               </Button>
             </div>
-            <div className="p-4 max-h-[calc(90vh-80px)] overflow-auto">
-              <ItemRow item={selectedProduct} />
+            <div className="p-5 max-h-[calc(90vh-90px)] overflow-auto bg-white">
+              <ItemRow
+                item={selectedProduct}
+                onDeleted={() => {
+                  setSelectedProduct(null)
+                  mutate('/api/semi-finished')
+                }}
+              />
             </div>
           </div>
         </div>
       )}
     </div>
   )
-}function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: () => void }) {
-  const { buckets, loading, error } = useBuckets(product.id)
+}
+
+function LegacyInput({ id, label, value, onChange, placeholder }: { id: string; label: string; value: string; onChange: (val: string) => void; placeholder: string }) {
+  return (
+    <div className="space-y-1">
+      <Label htmlFor={id} className="text-xs text-slate-600">
+        {label}
+      </Label>
+      <Input
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-9 text-xs bg-white border border-slate-200 text-slate-900"
+      />
+    </div>
+  )
+}
+
+function MetricCard({ label, value, icon, accent }: { label: string; value: string | number; icon: ReactNode; accent: string }) {
+  return (
+    <div className="rounded-2xl border border-sky-100 bg-white/80 backdrop-blur-lg shadow-lg p-4 flex items-center gap-3">
+      <div className={`rounded-xl bg-gradient-to-br ${accent} text-slate-900 p-3 shadow-inner`}>{icon}</div>
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">{label}</p>
+        <p className="text-xl font-semibold text-slate-900">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: () => void }) {
+  const { buckets, loading, error } = useSemiFinishedBuckets(product.id)
   const saldo = Number(product.quantity_total) - Number(product.quantity_envasado)
-  const soft = getFamilyColor(product.family)
 
   // Status simplificado baseado nos baldes
   const statusSummary = useMemo(() => {
     if (loading || error || !buckets.length) return { text: 'Carregando...', color: 'text-slate-500' }
 
-    const packaged = buckets.filter(b => b.status === 'packaged').length
+    const packaged = buckets.filter((b) => b.status === 'packaged').length
+    const partial = buckets.filter((b) => b.status === 'partial').length
     const total = buckets.length
 
-    if (packaged === total) return { text: 'Concluído', color: 'text-emerald-600' }
-    if (packaged > 0) return { text: `${packaged}/${total} embalados`, color: 'text-amber-600' }
+    const embalados = packaged + partial
+    const inQuarantine = embalados > 0
+
+    if (inQuarantine && embalados === total) {
+      return { text: 'Quarentena (envase concluído)', color: 'text-emerald-600' }
+    }
+
+    if (inQuarantine) {
+      return { text: `Quarentena (${embalados}/${total} envasados)`, color: 'text-amber-600' }
+    }
+
     return { text: `${total} pendentes`, color: 'text-slate-600' }
   }, [buckets, loading, error])
 
@@ -233,24 +345,14 @@ export default function SemiFinishedPage() {
           )}
         </div>
 
-        <div className="flex gap-1.5">
+        <div className="flex justify-end">
           <Button
             size="sm"
-            variant="outline"
-            className="flex-1 text-xs h-7 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 hover:scale-[1.02] group-hover:shadow-sm"
-            onClick={() => {
-              // Abrir modal detalhado ou navegar para detalhes
-              console.log('Ver detalhes do produto:', product.id)
-            }}
-          >
-            Detalhes
-          </Button>
-          <Button
-            size="sm"
-            className="flex-1 text-xs h-7 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+            className="inline-flex items-center justify-center gap-1.5 text-xs h-8 px-4 rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:hover:translate-y-0"
             disabled={buckets.length === 0}
             onClick={onManage}
           >
+            <Settings2 className="h-3.5 w-3.5" />
             Gerenciar
           </Button>
         </div>
@@ -259,10 +361,10 @@ export default function SemiFinishedPage() {
   )
 }
 
-function ItemRow({ item }: { item: SemiItem }) {
-  const { buckets, loading, error, refresh } = useBuckets(item.id)
+function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }) {
+  const { buckets, loading, error, mutate: refresh } = useSemiFinishedBuckets(item.id)
   const [selected, setSelected] = useState<Record<string, boolean>>({})
-  const [busy, setBusy] = useState<null | 'send' | 'package' | 'return'>(null)
+  const [busy, setBusy] = useState<null | 'send' | 'package' | 'return' | 'delete'>(null)
 
   const toggle = (id: string) => setSelected((s) => ({ ...s, [id]: !s[id] }))
   const selectedIds = Object.keys(selected).filter((k) => selected[k])
@@ -276,6 +378,23 @@ function ItemRow({ item }: { item: SemiItem }) {
     await Promise.all([refresh(), mutate('/api/semi-finished')])
     setSelected({})
     setBusy(null)
+  }
+
+  const deleteItem = async () => {
+    if (!confirm('Excluir este produto de Semi-Acabados? Esta ação não pode ser desfeita.')) return
+    setBusy('delete')
+    try {
+      const res = await fetch(`/api/semi-finished/${item.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const json = await res.json().catch(() => null)
+        alert(json?.error || 'Erro ao excluir produto')
+      } else {
+        await mutate('/api/semi-finished')
+        onDeleted?.()
+      }
+    } finally {
+      setBusy(null)
+    }
   }
 
   const packageBucket = async () => {
@@ -304,7 +423,7 @@ function ItemRow({ item }: { item: SemiItem }) {
   }
 
   const saldo = Number(item.quantity_total) - Number(item.quantity_envasado)
-  const soft = getFamilyColor(item.family)
+  const soft = getSemiFinishedFamilyColor(item.family)
 
   return (
     <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm bg-white">
@@ -358,47 +477,30 @@ function ItemRow({ item }: { item: SemiItem }) {
           )}
         </div>
 
-        <div className="mt-3 flex gap-2">
-          <Button size="sm" disabled={!selectedIds.length || !!busy} onClick={sendToPackaging} className="bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow" title="Enviar baldes selecionados para envase">
-            {busy === 'send' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Send className="h-3.5 w-3.5 mr-1" />} Enviar para envase
-          </Button>
-          <Button size="sm" variant="secondary" disabled={selectedIds.length !== 1 || !!busy} onClick={packageBucket} className="bg-gradient-to-b from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow" title="Registrar envase total ou parcial no balde selecionado">
-            {busy === 'package' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <PackageCheck className="h-3.5 w-3.5 mr-1" />} Registrar envase
-          </Button>
-          <Button size="sm" variant="ghost" disabled={selectedIds.length !== 1 || !!busy} onClick={returnBucket} className="border border-slate-300 hover:bg-slate-50" title="Devolver balde para o estoque de Semi‑Acabados">
-            {busy === 'return' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Undo2 className="h-3.5 w-3.5 mr-1" />} Devolver
+        <div className="mt-3 flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex gap-2">
+            <Button size="sm" disabled={!selectedIds.length || !!busy} onClick={sendToPackaging} className="bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow" title="Enviar baldes selecionados para envase">
+              {busy === 'send' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Send className="h-3.5 w-3.5 mr-1" />} Enviar para envase
+            </Button>
+            <Button size="sm" variant="secondary" disabled={selectedIds.length !== 1 || !!busy} onClick={packageBucket} className="bg-gradient-to-b from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow" title="Registrar envase total ou parcial no balde selecionado">
+              {busy === 'package' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <PackageCheck className="h-3.5 w-3.5 mr-1" />} Registrar envase
+            </Button>
+            <Button size="sm" variant="ghost" disabled={selectedIds.length !== 1 || !!busy} onClick={returnBucket} className="border border-slate-300 hover:bg-slate-50" title="Devolver balde para o estoque de Semi‑Acabados">
+              {busy === 'return' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Undo2 className="h-3.5 w-3.5 mr-1" />} Devolver
+            </Button>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={!!busy}
+            onClick={deleteItem}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200/60"
+            title="Excluir este produto de Semi‑Acabados"
+          >
+            {busy === 'delete' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1" />} Excluir produto
           </Button>
         </div>
       </div>
     </div>
   )
-}
-
-function getFamilyColor(family: string) {
-  const n = (family || '').toLowerCase()
-  // Paleta por família (tons suaves)
-  const presets: Record<string, string> = {
-    'linha pink': '#FDE7EF',
-    'skincare': '#E8F0FE',
-    'linha skincare': '#E8F0FE',
-    'capilar': '#EAF7EF',
-    'linha capilar': '#EAF7EF',
-    'solar': '#FFF7DB',
-    'linha solar': '#FFF7DB',
-    'neutra': '#F3F4F6',
-    'neutro': '#F3F4F6',
-  }
-  for (const key of Object.keys(presets)) {
-    if (n.includes(key)) return presets[key]
-  }
-  // Fallback para nomes de cores simples contidos na família
-  const colorHints: Record<string, string> = {
-    bege: '#F6F0E4', rosa: '#FDE7EF', pink: '#FDE7EF', azul: '#E8F0FE',
-    verde: '#EAF7EF', amarelo: '#FFF7DB', roxo: '#F1E9FF', laranja: '#FFF0E5', cinza: '#F3F4F6'
-  }
-  for (const key of Object.keys(colorHints)) if (n.includes(key)) return colorHints[key]
-  // Geração determinística suave
-  let h = 0
-  for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % 360
-  return `hsl(${h}, 70%, 95%)`
 }

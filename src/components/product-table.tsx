@@ -25,6 +25,8 @@ interface ProductTableProps {
   onResumeProduction: (id: string) => void
   onBlockProduction: (id: string, reason: string) => void
   onDeleteProduct: (id: string) => void
+  onFinalizeProduct: (id: string) => void
+  modOperators?: { id: string; name: string; role?: string | null; isActive?: boolean }[]
 }
 
 export function ProductTable({
@@ -33,9 +35,16 @@ export function ProductTable({
   onPauseProduction,
   onResumeProduction,
   onBlockProduction,
-  onDeleteProduct
+  onDeleteProduct,
+  onFinalizeProduct,
+  modOperators,
 }: ProductTableProps) {
   const [draggedProduct, setDraggedProduct] = useState<Product | null>(null)
+
+  // Estágios visíveis no board (oculta Backlog e Rejeitado apenas na UI)
+  const VISIBLE_STAGES = STAGE_ORDER.filter(
+    (stage) => stage !== 'BACKLOG' && stage !== 'REJEITADO'
+  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -79,8 +88,18 @@ export function ProductTable({
   }
 
   const getProductsByStage = (stage: ProductStage) => {
-    const filtered = products.filter(product => product.currentStage === stage)
+    const filtered = products.filter(product => {
+      const currentStage = String(product.currentStage).toUpperCase() as ProductStage
+      return currentStage === stage
+    })
     return filtered
+  }
+
+  const getModOperatorLabel = (product: Product): string | null => {
+    if (!product.createdById || !modOperators || modOperators.length === 0) return null
+    const op = modOperators.find((o) => o.id === product.createdById)
+    if (!op) return null
+    return op.role ? `${op.name} (${op.role})` : op.name
   }
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -109,7 +128,8 @@ export function ProductTable({
       return
     }
 
-    const currentIndex = STAGE_ORDER.indexOf(currentProduct.currentStage)
+    const currentStageNormalized = String(currentProduct.currentStage).toUpperCase() as ProductStage
+    const currentIndex = STAGE_ORDER.indexOf(currentStageNormalized)
     const newIndex = STAGE_ORDER.indexOf(newStage)
 
     // Só permitir mover para frente ou para o estágio atual
@@ -188,7 +208,9 @@ export function ProductTable({
                   <Play className="h-3.5 w-3.5 text-blue-700" />
                 </div>
               </div>
-              <div className="mt-1 text-2xl font-semibold text-blue-700">{products.filter(p => p.status === 'active').length}</div>
+              <div className="mt-1 text-2xl font-semibold text-blue-700">
+              {products.filter(p => String(p.status).toUpperCase() === 'ACTIVE').length}
+            </div>
             </div>
 
             <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-b from-white to-amber-50 p-4 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
@@ -198,7 +220,9 @@ export function ProductTable({
                   <Pause className="h-3.5 w-3.5 text-amber-700" />
                 </div>
               </div>
-              <div className="mt-1 text-2xl font-semibold text-slate-800">{products.filter(p => p.status === 'paused').length}</div>
+              <div className="mt-1 text-2xl font-semibold text-slate-800">
+              {products.filter(p => String(p.status).toUpperCase() === 'PAUSED').length}
+            </div>
             </div>
 
             <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-b from-white to-emerald-50 p-4 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
@@ -208,7 +232,9 @@ export function ProductTable({
                   <CheckCircle className="h-3.5 w-3.5 text-emerald-700" />
                 </div>
               </div>
-              <div className="mt-1 text-2xl font-semibold text-emerald-700">{products.filter(p => p.status === 'completed').length}</div>
+              <div className="mt-1 text-2xl font-semibold text-emerald-700">
+              {products.filter(p => String(p.status).toUpperCase() === 'COMPLETED').length}
+            </div>
             </div>
           </div>
         </CardContent>
@@ -224,7 +250,7 @@ export function ProductTable({
           <div
             className="grid grid-flow-col auto-cols-[15rem] sm:auto-cols-[16rem] gap-3 pr-2"
           >
-            {STAGE_ORDER.map((stage) => {
+            {VISIBLE_STAGES.map((stage) => {
               const stageProducts = getProductsByStage(stage)
               const stageLabel = STAGE_LABELS[stage]
               const stageColor = STAGE_COLORS[stage]
@@ -243,6 +269,8 @@ export function ProductTable({
                   onResumeProduction={onResumeProduction}
                   onBlockProduction={onBlockProduction}
                   onDeleteProduct={onDeleteProduct}
+                  onFinalizeProduct={onFinalizeProduct}
+                  getModOperatorLabel={getModOperatorLabel}
                 />
               )
             })}
@@ -277,8 +305,8 @@ export function ProductTable({
       </DndContext>
 
       {/* Estatísticas por estágio (Carousel) */}
-      <Carousel className="carousel-center">
-        {STAGE_ORDER.map((stage) => {
+      <Carousel className="carousel-center hidden">
+        {VISIBLE_STAGES.map((stage) => {
           const count = getProductsByStage(stage).length
           return (
             <div

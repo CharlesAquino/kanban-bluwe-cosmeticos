@@ -1,13 +1,13 @@
-'use client';
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/toast';
 import { apiFetch } from '@/lib/api-fetch';
+import useSWR from 'swr';
 
 interface ProductFormProps {
   onProductCreated: () => void;
@@ -15,13 +15,22 @@ interface ProductFormProps {
 
 export function ProductForm({ onProductCreated }: ProductFormProps) {
   const { showToast } = useToast();
+
+  // Buscar operadores MOD
+  const { data: operators, error: operatorsError } = useSWR('/api/mod/operators', async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Falha ao carregar operadores');
+    const json = await res.json();
+    return json.success ? json.data : [];
+  });
+
   const [formData, setFormData] = useState({
     name: '',
     family: '',
     op: '',
     batch: '',
     quantity: '',
-    image: ''
+    modOperatorId: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +41,7 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
     op: string;
     batch: string;
     quantity: number;
-    image?: string;
+    modOperatorId: string;
   } | null>(null);
 
   // Pré-visualização de baldes (18kg por balde)
@@ -52,7 +61,7 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
     if (isSubmitting) return;
 
     // Validação básica
-    if (!formData.name.trim() || !formData.family.trim() || !formData.op.trim() || !formData.batch.trim() || !formData.quantity.trim()) {
+    if (!formData.name.trim() || !formData.family.trim() || !formData.op.trim() || !formData.batch.trim() || !formData.quantity.trim() || !formData.modOperatorId.trim()) {
       showToast('Todos os campos são obrigatórios', 'error');
       return;
     }
@@ -60,6 +69,12 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
     const quantity = parseFloat(formData.quantity);
     if (isNaN(quantity) || quantity <= 0) {
       showToast('Quantidade deve ser um número positivo', 'error');
+      return;
+    }
+
+    const mod = parseInt(formData.image);
+    if (isNaN(mod) || mod < 1 || mod > 10) {
+      showToast('MOD deve ser um número entre 1 e 10', 'error');
       return;
     }
 
@@ -74,7 +89,7 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
         op: formData.op.trim(),
         batch: formData.batch.trim(),
         quantity: quantity,
-        image: formData.image.trim() || undefined
+        modOperatorId: formData.modOperatorId.trim()
       };
       setLastAttempt(payload);
 
@@ -83,7 +98,14 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            name: formData.name.trim(),
+            family: formData.family.trim(),
+            op: formData.op.trim(),
+            batch: formData.batch.trim(),
+            quantity: quantity,
+            modOperatorId: formData.modOperatorId.trim()
+          }),
           timeoutMs: 25000,
           retries: 3,
           retryDelayMs: 800,
@@ -106,7 +128,7 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
         op: '',
         batch: '',
         quantity: '',
-        image: ''
+        modOperatorId: ''
       });
 
       setLastError(null);
@@ -135,7 +157,14 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(lastAttempt),
+          body: JSON.stringify({
+            name: lastAttempt.name,
+            family: lastAttempt.family,
+            op: lastAttempt.op,
+            batch: lastAttempt.batch,
+            quantity: lastAttempt.quantity,
+            modOperatorId: lastAttempt.modOperatorId
+          }),
           timeoutMs: 25000,
           retries: 3,
           retryDelayMs: 800,
@@ -198,9 +227,20 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
               </div>
             </div>
             <div>
-              <Label htmlFor="image">URL da Imagem (opcional)</Label>
-              <Input id="image" type="url" value={formData.image} onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))} placeholder="https://exemplo.com/imagem.jpg" />
-              <p className="text-[11px] text-slate-500 mt-1">Utilize uma imagem ilustrativa do produto, se disponível.</p>
+              <Label htmlFor="modOperatorId">MOD Responsável *</Label>
+              <Select value={formData.modOperatorId} onValueChange={(value) => setFormData(prev => ({ ...prev, modOperatorId: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um colaborador MOD" />
+                </SelectTrigger>
+                <SelectContent>
+                  {operators?.filter(op => op.isActive).map((operator) => (
+                    <SelectItem key={operator.id} value={operator.id}>
+                      {operator.name} {operator.role ? `(${operator.role})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-slate-500 mt-1">Selecione o colaborador responsável por esta produção.</p>
             </div>
           </div>
           <div className="space-y-4">
