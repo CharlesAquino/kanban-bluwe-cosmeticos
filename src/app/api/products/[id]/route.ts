@@ -144,3 +144,56 @@ export async function DELETE(
     }, { status: 500 })
   }
 }
+
+// PATCH /api/products/[id] - Atualizar status do produto
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const { id } = params
+    const body = await request.json()
+    const { status, currentStage } = body
+
+    console.log('=== API PATCH: Atualizando status do produto ===')
+    console.log('Dados recebidos:', { id, status, currentStage })
+
+    // Buscar produto atual com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
+
+    if (!product) {
+      return NextResponse.json({
+        success: false,
+        error: 'Produto não encontrado'
+      }, { status: 404 })
+    }
+
+    // Atualizar status do produto com Prisma
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        status: status !== undefined ? String(status).toUpperCase() : product.status,
+        currentStage: currentStage !== undefined ? String(currentStage).toUpperCase() : product.currentStage,
+        updatedAt: new Date()
+      }
+    })
+
+    console.log('Status do produto atualizado:', updatedProduct)
+
+    return NextResponse.json({
+      success: true,
+      data: updatedProduct
+    })
+  } catch (error) {
+    console.error('=== API PATCH: ERRO ===')
+    console.error('Erro ao atualizar status do produto:', error)
+
+    return NextResponse.json({
+      success: false,
+      error: 'Erro ao atualizar status do produto',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    }, { status: 500 })
+  }
+}

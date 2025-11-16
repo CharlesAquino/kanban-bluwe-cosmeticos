@@ -14,11 +14,15 @@ import {
   Users,
   Package,
   CheckCircle,
-  QrCode
+  QrCode,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Target,
+  TrendingUp
 } from 'lucide-react'
 import type { Product, HourlyControl, StageHistory } from '@/lib/types'
 import { STAGE_LABELS, EFFICIENCY_STATUS_COLORS, EFFICIENCY_STATUS_LABELS } from '@/lib/types'
-import { getStatusUI } from '@/lib/status-utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import QRCode from 'react-qr-code'
 
@@ -33,6 +37,7 @@ interface KanbanCardProps {
   onDeleteProduct: (id: string) => void
   onFinalize: (id: string) => void
   modOperatorLabel?: string | null
+  finalizingProducts?: Set<string>
 }
 
 const KanbanCardBase = ({
@@ -46,8 +51,10 @@ const KanbanCardBase = ({
   onDeleteProduct,
   onFinalize,
   modOperatorLabel,
+  finalizingProducts,
 }: KanbanCardProps) => {
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
+  const [hourlyControlExpanded, setHourlyControlExpanded] = useState(false)
   const {
     attributes,
     listeners,
@@ -78,14 +85,47 @@ const KanbanCardBase = ({
   const isLegacyFinalStage = normalizedStage === 'FINALIZADO'
   const isFinalizableStage = normalizedStage === 'APROVADO' || isLegacyFinalStage
 
+  // Cores por estágio para borda lateral
+  const getStageBorderColor = (stage: string) => {
+    const stageColors: Record<string, string> = {
+      'PRODUCAO_1KG': 'border-blue-400',
+      'ANALISE_CQ_PILOTO': 'border-purple-400',
+      'PRODUCAO_REATOR': 'border-indigo-400',
+      'ANALISE_REATOR': 'border-pink-400',
+      'APROVADO': 'border-green-400',
+      'FINALIZADO': 'border-slate-400'
+    }
+    return stageColors[stage] || 'border-slate-300'
+  }
+
+  // Calcular progresso baseado na posição do estágio
+  const calculateStageProgress = () => {
+    const stageOrder = ['PRODUCAO_1KG', 'ANALISE_CQ_PILOTO', 'PRODUCAO_REATOR', 'ANALISE_REATOR', 'APROVADO', 'FINALIZADO']
+    const currentIndex = stageOrder.indexOf(normalizedStage)
+    if (currentIndex === -1) return 0
+    return Math.round(((currentIndex + 1) / stageOrder.length) * 100)
+  }
+
+  const stageProgress = calculateStageProgress()
+
+  const getStageBgGradient = (stage: string) => {
+    const stageGradients: Record<string, string> = {
+      'PRODUCAO_1KG': 'from-blue-50/50 to-white',
+      'ANALISE_CQ_PILOTO': 'from-purple-50/50 to-white',
+      'PRODUCAO_REATOR': 'from-indigo-50/50 to-white',
+      'ANALISE_REATOR': 'from-pink-50/50 to-white',
+      'APROVADO': 'from-green-50/50 to-white',
+      'FINALIZADO': 'from-slate-50/50 to-white'
+    }
+    return stageGradients[stage] || 'from-slate-50/50 to-white'
+  }
+
   const handleBlockProduction = () => {
     const reason = prompt('Motivo do bloqueio:', '')
     if (reason) {
       onBlockProduction(product.id, reason)
     }
   }
-
-  
 
   const handleDeleteProduct = () => {
     if (confirm(`Tem certeza que deseja remover o produto ${product.name}?`)) {
@@ -104,33 +144,35 @@ const KanbanCardBase = ({
     <Card
       ref={setNodeRef}
       style={style}
-      className={`relative cursor-grab active:cursor-grabbing transition-shadow duration-200 bg-white border border-slate-200 rounded-lg ${
-        isDragging ? 'shadow-md ring-1 ring-blue-200' : 'shadow-sm hover:shadow-md'
+      className={`relative cursor-grab active:cursor-grabbing transition-all duration-300 bg-gradient-to-br ${getStageBgGradient(normalizedStage)} border-l-4 ${getStageBorderColor(normalizedStage)} border-slate-200 rounded-lg ${
+        isDragging 
+          ? 'shadow-xl ring-2 ring-slate-300 scale-[1.02] opacity-80' 
+          : 'shadow-sm hover:shadow-lg hover:-translate-y-1'
       }`}
       {...attributes}
       {...listeners}
     >
       <CardContent className="p-3">
         {/* Cabeçalho do card */}
-        <div className="flex items-start justify-between mb-2">
+        <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <Package className="h-3 w-3 text-gray-400 flex-shrink-0" />
-              <h4 className="font-semibold text-gray-900 text-sm leading-tight truncate">
+              <Package className="h-3 w-3 text-slate-500 flex-shrink-0" />
+              <h4 className="font-semibold text-slate-900 text-sm leading-tight">
                 {product.name}
               </h4>
             </div>
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <span className="font-medium truncate">OP:</span>
-              <span className="truncate">{product.op}</span>
-              <span className="text-gray-300">•</span>
-              <span className="font-medium truncate">Lote:</span>
-              <span className="truncate">{product.batch}</span>
+            <div className="flex items-center gap-2 text-xs text-slate-600">
+              <span className="font-medium">OP:</span>
+              <span>{product.op}</span>
+              <span className="text-slate-300">•</span>
+              <span className="font-medium">Lote:</span>
+              <span>{product.batch}</span>
             </div>
             {modOperatorLabel && (
-              <div className="flex items-center gap-1 text-[11px] text-gray-500 mt-0.5">
+              <div className="flex items-center gap-1 text-[11px] text-slate-500 mt-1">
                 <Users className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">Responsável: {modOperatorLabel}</span>
+                <span>Responsável: {modOperatorLabel}</span>
               </div>
             )}
           </div>
@@ -140,7 +182,7 @@ const KanbanCardBase = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-1 h-6 w-6 text-gray-400 hover:text-blue-500 hover:bg-blue-50 flex-shrink-0"
+                  className="p-1 h-6 w-6 text-slate-400 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0 transition-colors"
                   title="QR Code da OP"
                 >
                   <QrCode className="h-3 w-3" />
@@ -164,7 +206,7 @@ const KanbanCardBase = ({
             <Button
               variant="ghost"
               size="sm"
-              className="p-1 h-6 w-6 text-gray-400 hover:text-red-500 hover:bg-red-50 flex-shrink-0 ml-1"
+              className="p-1 h-6 w-6 text-slate-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0 ml-1 transition-colors"
               onClick={(e) => {
                 e.stopPropagation()
                 handleDeleteProduct()
@@ -177,75 +219,157 @@ const KanbanCardBase = ({
         </div>
 
         {/* Informações principais */}
-        <div className="space-y-1 mb-2">
+        <div className="space-y-3 mb-3">
           <div className="flex items-center justify-between">
-            <Badge className={`w-fit text-xs font-medium ring-1 ring-slate-200 bg-slate-50 text-slate-700`}>
+            <Badge className="w-fit text-xs font-medium bg-slate-100 text-slate-700 ring-1 ring-slate-200 border-0">
               {STAGE_LABELS[product.currentStage]}
             </Badge>
-            <div className="flex items-center gap-1 text-sm font-semibold text-gray-700">
-              <span className="truncate">{product.quantity.toFixed(1)}</span>
-              <span className="text-xs text-gray-500">kg</span>
+            <div className="flex items-center gap-1 text-sm font-semibold text-slate-800">
+              <span>{product.quantity.toFixed(1)}</span>
+              <span className="text-xs text-slate-500">kg</span>
             </div>
           </div>
 
-          {currentStageInfo?.startTime && (
-            <div className="flex items-center gap-1 text-xs text-gray-600">
-              <div className="w-1 h-1 bg-gray-400 rounded-full flex-shrink-0"></div>
-              <span className="truncate">Início: {formatDate(currentStageInfo.startTime)}</span>
+          {/* Progress Indicator */}
+          <div className="relative">
+            <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+              <div className="flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                <span>Progresso do Estágio</span>
+              </div>
+              <span className="font-medium">{stageProgress}%</span>
             </div>
-          )}
-
-          {currentStageInfo?.mod > 1 && (
-            <div className="flex items-center gap-1 text-xs text-gray-600">
-              <Users className="h-3 w-3 flex-shrink-0" />
-              <span>MOD: {currentStageInfo.mod} pessoas</span>
+            <div className="w-full bg-slate-200 rounded-full h-1.5">
+              <div 
+                className="bg-gradient-to-r from-slate-400 to-slate-600 h-1.5 rounded-full transition-all duration-500"
+                style={{
+                  width: `${stageProgress}%`,
+                  minWidth: stageProgress > 0 ? '2px' : '0'
+                }}
+              ></div>
             </div>
-          )}
+          </div>
 
-          <div className="flex items-center gap-1 text-xs text-gray-600">
-            <div className="w-1 h-1 bg-gray-400 rounded-full flex-shrink-0"></div>
-            <span className="truncate">Duração: {getDuration(currentStageInfo.startTime, currentStageInfo.endTime)}</span>
+          <div className="grid grid-cols-1 gap-2 text-xs text-slate-600">
+            {currentStageInfo?.startTime && (
+              <div className="flex items-center gap-2">
+                <Clock className="h-3 w-3 flex-shrink-0" />
+                <span>Início: {formatDate(currentStageInfo.startTime)}</span>
+              </div>
+            )}
+            
+            {currentStageInfo?.mod > 1 && (
+              <div className="flex items-center gap-2">
+                <Users className="h-3 w-3 flex-shrink-0" />
+                <span>MOD: {currentStageInfo.mod} pessoas</span>
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2">
+              <Target className="h-3 w-3 flex-shrink-0" />
+              <span>Duração: {getDuration(currentStageInfo.startTime, currentStageInfo.endTime)}</span>
+            </div>
           </div>
         </div>
 
-        {/* Controle hora a hora */}
-        {latestHourlyControl ? (
-          <div className="mb-2 p-2 bg-slate-50 rounded-lg border border-slate-200/70">
-            <div className="flex items-center gap-2 mb-1">
-              <Badge className={`${EFFICIENCY_STATUS_COLORS[latestHourlyControl.status]} w-fit text-xs font-medium`}>
-                {EFFICIENCY_STATUS_LABELS[latestHourlyControl.status]}
-              </Badge>
-              <div className="flex items-center gap-1 text-xs font-semibold text-gray-700">
-                <span>{latestHourlyControl.efficiency}%</span>
-                <span className="text-gray-500">eficiência</span>
-              </div>
+        {/* Controle hora a hora - Accordion */}
+        <div className="mb-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setHourlyControlExpanded(!hourlyControlExpanded)
+            }}
+            className="w-full flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-200/70 hover:bg-slate-100 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Target className="h-3 w-3 text-slate-600" />
+              <span className="text-xs font-medium text-slate-700">Controle Hora a Hora</span>
+              {latestHourlyControl && (
+                <Badge className={`${EFFICIENCY_STATUS_COLORS[latestHourlyControl.status]} w-fit text-[10px] font-medium`}>
+                  {latestHourlyControl.efficiency}%
+                </Badge>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
-              <div className="truncate">
-                <span className="font-medium">Meta:</span> {latestHourlyControl.targetQuantity}kg
-              </div>
-              <div className="truncate">
-                <span className="font-medium">Real:</span> {latestHourlyControl.actualQuantity}kg
-              </div>
+            {hourlyControlExpanded ? (
+              <ChevronUp className="h-3 w-3 text-slate-500" />
+            ) : (
+              <ChevronDown className="h-3 w-3 text-slate-500" />
+            )}
+          </button>
+          
+          {hourlyControlExpanded && (
+            <div className="mt-1 p-2 bg-white rounded-lg border border-slate-200/50">
+              {latestHourlyControl ? (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className={`${EFFICIENCY_STATUS_COLORS[latestHourlyControl.status]} w-fit text-xs font-medium`}>
+                      {EFFICIENCY_STATUS_LABELS[latestHourlyControl.status]}
+                    </Badge>
+                    <div className="flex items-center gap-1 text-xs font-semibold text-slate-700">
+                      <span>{latestHourlyControl.efficiency}%</span>
+                      <span className="text-slate-500">eficiência</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                    <div className="truncate">
+                      <span className="font-medium">Meta:</span> {latestHourlyControl.targetQuantity}kg
+                    </div>
+                    <div className="truncate">
+                      <span className="font-medium">Real:</span> {latestHourlyControl.actualQuantity}kg
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-slate-500 truncate">
+                    Operador: {latestHourlyControl.operator}
+                  </div>
+                </>
+              ) : (
+                <div className="text-xs text-slate-400 text-center py-2">
+                  Nenhum controle registrado
+                </div>
+              )}
             </div>
-            <div className="mt-1 text-xs text-gray-500 truncate">
-              Operador: {latestHourlyControl.operator}
-            </div>
-          </div>
-        ) : (
-          <div className="mb-2 p-2 bg-slate-50 rounded-lg border border-slate-200/70">
-            <div className="text-xs text-gray-400 text-center">
-              Nenhum controle registrado
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Status */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {(() => {
-              const ui = getStatusUI(product.status)
-              return <Badge className={`w-fit text-xs font-medium ${ui.badgeClass}`}>{ui.icon}</Badge>
+              const status = String(product.status).toLowerCase()
+              if (status === 'active') {
+                return (
+                  <Badge className="w-fit text-xs font-medium bg-blue-100 text-blue-700 ring-1 ring-blue-200 border-0">
+                    <Play className="h-3 w-3 mr-1" />
+                    Ativo
+                  </Badge>
+                )
+              } else if (status === 'paused') {
+                return (
+                  <Badge className="w-fit text-xs font-medium bg-amber-100 text-amber-700 ring-1 ring-amber-200 border-0">
+                    <Pause className="h-3 w-3 mr-1" />
+                    Pausado
+                  </Badge>
+                )
+              } else if (status === 'blocked') {
+                return (
+                  <Badge className="w-fit text-xs font-medium bg-red-100 text-red-700 ring-1 ring-red-200 border-0">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    Bloqueado
+                  </Badge>
+                )
+              } else if (status === 'completed') {
+                return (
+                  <Badge className="w-fit text-xs font-medium bg-green-100 text-green-700 ring-1 ring-green-200 border-0">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Concluído
+                  </Badge>
+                )
+              }
+              return (
+                <Badge className="w-fit text-xs font-medium bg-slate-100 text-slate-700 ring-1 ring-slate-200 border-0">
+                  {product.status}
+                </Badge>
+              )
             })()}
           </div>
 
@@ -256,7 +380,7 @@ const KanbanCardBase = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 w-6 p-0 text-amber-700 hover:bg-amber-50"
+                  className="h-6 w-6 p-0 text-amber-600 hover:bg-amber-50 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation()
                     onPauseProduction(product.id)
@@ -270,7 +394,7 @@ const KanbanCardBase = ({
               {String(product.status).toLowerCase() === 'paused' && (
                 <Button
                   size="sm"
-                  className="h-6 w-6 p-0 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="h-6 w-6 p-0 bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
                   onClick={(e) => {
                     e.stopPropagation()
                     onResumeProduction(product.id)
@@ -285,7 +409,7 @@ const KanbanCardBase = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+                  className="h-6 w-6 p-0 text-red-600 hover:bg-red-50 transition-colors"
                   onClick={(e) => {
                     e.stopPropagation()
                     handleBlockProduction()
@@ -304,15 +428,25 @@ const KanbanCardBase = ({
           <div className="absolute bottom-2 right-2">
             <Button
               size="sm"
-              className="h-7 px-3 py-0 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+              className="h-7 px-3 py-0 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white shadow-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={(e) => {
                 e.stopPropagation()
                 handleFinalize()
               }}
+              disabled={finalizingProducts?.has(product.id)}
               title="Finalizar e enviar para Semi-Acabados"
             >
-              <CheckCircle className="h-3 w-3 mr-1" />
-              Finalizar
+              {finalizingProducts?.has(product.id) ? (
+                <>
+                  <div className="h-3 w-3 mr-1 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  Finalizando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Finalizar
+                </>
+              )}
             </Button>
           </div>
         )}

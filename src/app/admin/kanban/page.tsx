@@ -4,13 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, Package, Activity, CheckCircle, AlertTriangle, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, TrendingUp, Clock, Zap, Target } from 'lucide-react'
+import { RefreshCw, Package, Activity, CheckCircle, AlertTriangle, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, TrendingUp, Clock, Zap, Target, CheckSquare } from 'lucide-react'
 import { loadProductsAndStats } from '@/lib/product-operations'
 import type { Product, ProductStage } from '@/lib/types'
 import { STAGE_ORDER, STAGE_LABELS } from '@/lib/types'
 import Link from 'next/link'
 
-export default function KanbanOverviewPage() {
+export default function AdminKanbanPage() {
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
   const [overviewDropdownOpen, setOverviewDropdownOpen] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
@@ -82,6 +82,54 @@ export default function KanbanOverviewPage() {
     [products, semiFinishedCount]
   )
 
+  // Função para finalizar produto e mover para semi-acabados
+  const handleFinalizeProduct = async (product: Product) => {
+    try {
+      // 1. Mover produto para semi-acabados via API
+      const semiFinishedData = {
+        name: product.name,
+        family: 'DEFAULT', // Pode ser ajustado conforme necessidade
+        op: product.op,
+        batch: product.batch,
+        quantity: product.quantity,
+        status: 'COMPLETED',
+        createdAt: new Date().toISOString(),
+        sourceProductId: product.id
+      }
+
+      const semiFinishedResponse = await fetch('/api/semi-finished', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(semiFinishedData)
+      })
+
+      if (!semiFinishedResponse.ok) {
+        throw new Error('Erro ao criar item semi-acabado')
+      }
+
+      // 2. Atualizar status do produto para COMPLETED
+      const updateResponse = await fetch(`/api/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'COMPLETED',
+          currentStage: 'COMPLETED'
+        })
+      })
+
+      if (!updateResponse.ok) {
+        throw new Error('Erro ao atualizar status do produto')
+      }
+
+      // 3. Recarregar dados
+      await fetchData()
+      
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao finalizar produto'
+      setError(msg)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <header className="relative z-10 bg-white/80 backdrop-blur-xl border-b border-indigo-100 shadow-sm">
@@ -93,14 +141,14 @@ export default function KanbanOverviewPage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-700 to-purple-700 bg-clip-text text-transparent">
-                  Produção – Fluxo de OPs
+                  Admin Kanban – Fluxo de OPs
                 </h1>
                 <p className="text-sm text-slate-600 font-medium flex items-center gap-2">
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
                     <Activity className="h-3 w-3" />
                     Ao vivo
                   </span>
-                  Bluwe Cosméticos • Sistema de Produção
+                  Bluwe Cosméticos • Administração de Produção
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
                   {lastUpdate
@@ -139,47 +187,25 @@ export default function KanbanOverviewPage() {
                       </div>
                     </Link>
                     <Link
-                      href="/hourly-control"
+                      href="/kanban-overview"
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
-                      onClick={() => setOverviewDropdownOpen(false)}
-                    >
-                      <BarChart3 className="h-4 w-4 text-slate-500" />
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">Hora a Hora</span>
-                        <span className="text-xs text-slate-500">Controle horário</span>
-                      </div>
-                    </Link>
-                    <Link
-                      href="/analise-operador"
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
-                      onClick={() => setOverviewDropdownOpen(false)}
-                    >
-                      <Users className="h-4 w-4 text-slate-500" />
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">MOD</span>
-                        <span className="text-xs text-slate-500">Análise por operador</span>
-                      </div>
-                    </Link>
-                    <Link
-                      href="/quality"
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
-                      onClick={() => setOverviewDropdownOpen(false)}
-                    >
-                      <Beaker className="h-4 w-4 text-slate-500" />
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">Qualidade</span>
-                        <span className="text-xs text-slate-500">Monitoramento CQ</span>
-                      </div>
-                    </Link>
-                    <Link
-                      href="/semi-finished-overview"
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
                       onClick={() => setOverviewDropdownOpen(false)}
                     >
                       <Package className="h-4 w-4 text-slate-500" />
                       <div className="flex flex-col">
-                        <span className="font-medium text-sm">Semi acabados</span>
-                        <span className="text-xs text-slate-500">Visão geral semi-acabados</span>
+                        <span className="font-medium text-sm">Produção</span>
+                        <span className="text-xs text-slate-500">Fluxo de OPs (visualização)</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/admin/kanban"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100 bg-indigo-50"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <Settings className="h-4 w-4 text-indigo-600" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm text-indigo-700">Admin Kanban</span>
+                        <span className="text-xs text-indigo-600">Controle completo da produção</span>
                       </div>
                     </Link>
                   </div>
@@ -200,7 +226,7 @@ export default function KanbanOverviewPage() {
                 {adminDropdownOpen && (
                   <div className="fixed right-6 top-20 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999999]">
                     <Link
-                      href="/"
+                      href="/admin"
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
                       onClick={() => setAdminDropdownOpen(false)}
                     >
@@ -263,8 +289,16 @@ export default function KanbanOverviewPage() {
 
       <main className="mx-auto max-w-7xl px-6 py-8">
         {error && (
-          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            {error}
+          <div className="mb-6 rounded-xl border border-red-200 bg-gradient-to-r from-red-50 to-orange-50 px-6 py-4 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-red-800">Erro ao carregar dados</p>
+                <p className="text-xs text-red-600 mt-1">{error}</p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -353,98 +387,128 @@ export default function KanbanOverviewPage() {
           <div>
             <div className="flex items-center gap-2 mb-6">
               <Target className="h-5 w-5 text-indigo-600" />
-              <h2 className="text-lg font-semibold text-slate-800">Fluxo de Produção</h2>
+              <h2 className="text-lg font-semibold text-slate-800">Fluxo de Produção - Controle Administrativo</h2>
               <div className="h-px bg-gradient-to-r from-indigo-200 to-purple-200 flex-1" />
             </div>
-            <div className="grid grid-cols-5 gap-4">
-            {VISIBLE_STAGES.map((stage) => {
-              const stageProducts = productsByStage[stage] || []
-              const stageLabel = STAGE_LABELS[stage]
-              
-              // Aplicar cor apenas se houver processos em andamento
-              const hasActiveProcesses = stageProducts.length > 0
-              const activeColorClass = hasActiveProcesses 
-                ? 'bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1'
-                : 'bg-white border-slate-200 shadow-sm'
-              const activeIconClass = hasActiveProcesses
-                ? 'text-indigo-600 bg-indigo-100'
-                : 'text-slate-500 bg-slate-100'
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {VISIBLE_STAGES.map((stage, index) => {
+                const stageProducts = productsByStage[stage] || []
+                const stageLabel = STAGE_LABELS[stage]
+                
+                // Cores diferentes para cada estágio
+                const stageColors = [
+                  'from-blue-50 to-indigo-50 border-blue-100',
+                  'from-emerald-50 to-green-50 border-emerald-100', 
+                  'from-amber-50 to-orange-50 border-amber-100',
+                  'from-purple-50 to-pink-50 border-purple-100',
+                  'from-rose-50 to-red-50 border-rose-100'
+                ]
+                const iconColors = [
+                  'text-blue-600 bg-blue-100',
+                  'text-emerald-600 bg-emerald-100',
+                  'text-amber-600 bg-amber-100', 
+                  'text-purple-600 bg-purple-100',
+                  'text-rose-600 bg-rose-100'
+                ]
+                const colorClass = stageColors[index % stageColors.length]
+                const iconColorClass = iconColors[index % iconColors.length]
 
-              return (
-                <Card key={stage} className={`h-full ${activeColorClass} rounded-xl`}>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center justify-between">
-                      <span className="flex items-center gap-3">
-                        <span className={`p-2 rounded-xl ${activeIconClass} shadow-sm`}>
-                          <Package className="h-5 w-5" />
-                        </span>
-                        <span className="font-bold text-slate-800 text-sm truncate" title={stageLabel}>
-                          {stageLabel}
-                        </span>
-                      </span>
-                      <Badge className={`text-[11px] font-bold shadow-sm ${
-                        hasActiveProcesses 
-                          ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white border-0' 
-                          : 'bg-slate-100 text-slate-600 border border-slate-200'
-                      }`}>
-                        {stageProducts.length}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    {stageProducts.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-8 text-slate-400">
-                        <Package className="h-6 w-6 mb-1 opacity-50" />
-                        <p className="text-[10px] font-medium">Vazio</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto pt-1 pr-1">
-                        {stageProducts.map((p) => (
-                          <div
-                            key={p.id}
-                            className="group rounded-lg border border-white/60 bg-white/80 backdrop-blur-sm px-3 py-2 text-[10px] shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.01] cursor-pointer"
-                          >
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <div className="flex-1 min-w-0">
-                                <div className="font-bold text-slate-900 text-xs truncate group-hover:text-indigo-700 transition-colors" title={p.name}>
-                                  {p.name}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[9px] font-medium">
-                                    <Zap className="h-2.5 w-2.5" />
-                                    {p.quantity.toFixed(1)} kg
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex flex-col items-end gap-1">
-                                <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                                  <Clock className="h-3 w-3" />
-                                  OP: {p.op}
-                                </div>
-                                <div className="text-[10px] text-slate-500">
-                                  Lote: {p.batch}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-                              <div className="flex items-center gap-1">
-                                <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[9px] text-emerald-600 font-medium">Ativo</span>
-                              </div>
-                              <div className="flex items-center gap-0.5">
-                                <Activity className="h-2.5 w-2.5 text-slate-400" />
-                                <span className="text-[9px] text-slate-400">Processo</span>
-                              </div>
-                            </div>
+                return (
+                  <Card key={stage} className={`h-full bg-gradient-to-br ${colorClass} border shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 rounded-2xl`}>
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-3">
+                          <span className={`p-2 rounded-xl ${iconColorClass} shadow-sm`}>
+                            <Package className="h-5 w-5" />
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 text-sm truncate" title={stageLabel}>
+                              {stageLabel}
+                            </span>
+                            <span className="text-xs text-slate-500">Estágio {index + 1}</span>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+                        </span>
+                        <Badge className={`text-[11px] font-bold shadow-sm ${
+                          stageProducts.length > 0 
+                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-0' 
+                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                        }`}>
+                          {stageProducts.length}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      {stageProducts.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                          <Package className="h-8 w-8 mb-2 opacity-50" />
+                          <p className="text-xs font-medium">Nenhum produto neste estágio</p>
+                          <p className="text-[10px] mt-1">Aguardando movimentação</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 max-h-[420px] overflow-y-auto pt-2 pr-1">
+                          {stageProducts.map((p) => (
+                            <div
+                              key={p.id}
+                              className="group rounded-xl border border-white/60 bg-white/80 backdrop-blur-sm px-4 py-3 text-[11px] shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02] cursor-pointer"
+                            >
+                              <div className="flex items-start justify-between gap-3 mb-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-slate-900 text-xs truncate group-hover:text-indigo-700 transition-colors" title={p.name}>
+                                    {p.name}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-medium">
+                                      <Zap className="h-2.5 w-2.5" />
+                                      {p.quantity.toFixed(1)} kg
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                                    <Clock className="h-3 w-3" />
+                                    OP: {p.op}
+                                  </div>
+                                  <div className="text-[10px] text-slate-500">
+                                    Lote: {p.batch}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  <span className="text-[10px] text-emerald-600 font-medium">Ativo</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Activity className="h-3 w-3 text-slate-400" />
+                                  <span className="text-[10px] text-slate-400">Em processo</span>
+                                </div>
+                              </div>
+                              
+                              {/* BOTÃO FINALIZADO - APENAS NO ESTÁGIO APROVADO */}
+                              {stage === 'APROVADO' && (
+                                <div className="mt-3 pt-3 border-t border-slate-200">
+                                  <Button
+                                    onClick={() => handleFinalizeProduct(p)}
+                                    size="sm"
+                                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 shadow-md hover:shadow-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 rounded-lg px-3 py-2 text-[10px] font-medium flex items-center justify-center gap-1"
+                                  >
+                                    <CheckSquare className="h-3 w-3" />
+                                    Finalizar
+                                  </Button>
+                                  <p className="text-[9px] text-slate-500 mt-1 text-center">
+                                    Mover para semi-acabados
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
           </div>
         )}
 
