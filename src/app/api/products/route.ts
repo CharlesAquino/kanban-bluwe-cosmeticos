@@ -79,3 +79,54 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
+
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { id } = params
+    const body = await request.json()
+
+    const product = await prisma.product.update({
+      where: { id },
+      data: {
+        name: body.name,
+        op: body.op,
+        batch: body.batch,
+        quantity: body.quantity,
+        currentStage: body.currentStage,
+        status: body.status
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: product
+    })
+  } catch (error) {
+    console.error('=== API PRODUCTS: Erro ao atualizar produto ===', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to update product'
+    }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { id } = params
+
+    await prisma.product.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Product deleted successfully'
+    })
+  } catch (error) {
+    console.error('=== API PRODUCTS: Erro ao deletar produto ===', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to delete product'
+    }, { status: 500 })
+  }
+}
