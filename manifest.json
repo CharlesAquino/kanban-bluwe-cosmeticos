@@ -1,0 +1,26 @@
+{
+  "name": "Kanban Bluwe - Sistema de Controle de Produção",
+  "short_name": "Kanban Bluwe",
+  "description": "Sistema avançado de controle de produção e gestão de processos para a Bluwe Cosméticos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
