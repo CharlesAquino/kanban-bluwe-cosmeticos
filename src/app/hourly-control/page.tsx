@@ -243,7 +243,7 @@ export default function HourlyControlPage() {
 
   const loadManualHourlyData = useCallback(async () => {
     try {
-      const response = await fetch('/api/producao-manual')
+      const response = await fetch('/api/mod-entry')
       const result = await response.json()
 
       if (!result.success || !Array.isArray(result.data)) {

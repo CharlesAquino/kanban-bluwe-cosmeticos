@@ -72,7 +72,7 @@ export default function ProducaoManualPage() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/producao-manual', {
+      const response = await fetch('/api/mod-entry', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
