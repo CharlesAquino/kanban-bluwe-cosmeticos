@@ -211,14 +211,20 @@ export default function AnaliseOperadorPage() {
         <div className="mx-auto max-w-7xl px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-700 text-white grid place-items-center font-bold text-lg shadow-lg shadow-slate-500/30">
-                <Users className="h-6 w-6" />
+              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-indigo-500 via-blue-500 to-purple-600 text-white grid place-items-center shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
+                <Users className="h-7 w-7" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
-                  Análise por Operador
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Análise de Performance MOD
                 </h1>
-                <p className="text-sm text-slate-500 font-medium">Bluwe Cosméticos • Avaliação de desempenho individual</p>
+                <p className="text-sm text-slate-600 font-medium flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium">
+                    <Activity className="h-3 w-3" />
+                    Tempo Real
+                  </span>
+                  Bluwe Cosméticos • Métricas individuais e eficiência operacional
+                </p>
               </div>
             </div>
             
@@ -393,12 +399,16 @@ export default function AnaliseOperadorPage() {
         {operadores.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Colaboradores MOD
+            <h2 className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-2">
+              <Users className="h-5 w-5 text-indigo-600" />
+              Equipe de Operadores
             </h2>
-            <p className="text-xs text-gray-500 hidden sm:block">
-              Clique em um colaborador para abrir a análise detalhada
+            <p className="text-sm text-slate-600 hidden sm:block flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
+                <Target className="h-3 w-3" />
+                Performance
+              </span>
+              Selecione um operador para visualizar métricas detalhadas de eficiência
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
