@@ -76,7 +76,7 @@ export default function DashboardViewPage() {
   const fetchDados = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/producao-manual')
+      const response = await fetch('/api/mod-entry')
       const result = await response.json()
 
       if (result.success) {

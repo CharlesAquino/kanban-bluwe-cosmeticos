@@ -8,7 +8,7 @@ const overviewTabs = [
   { href: "/home", label: "Overview" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/hourly-control", label: "Hora a Hora" },
-  { href: "/analise-operador", label: "MOD" },
+  { href: "/mod-analysis", label: "MOD" },
   { href: "/quality", label: "Qualidade" },
   { href: "/kanban-overview", label: "Produção" },
   { href: "/semi-finished-overview", label: "Kanban" },
@@ -17,6 +17,11 @@ const overviewTabs = [
 export function NavBar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // Esconde completamente o NavBar em qualquer rota admin
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";

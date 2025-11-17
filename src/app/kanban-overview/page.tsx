@@ -150,7 +150,7 @@ export default function KanbanOverviewPage() {
                       </div>
                     </Link>
                     <Link
-                      href="/analise-operador"
+                      href="/mod-analysis"
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100"
                       onClick={() => setOverviewDropdownOpen(false)}
                     >

@@ -12,30 +12,37 @@ interface StatsCardProps {
   color?: 'blue' | 'green' | 'slate' | 'red'
 }
 
-export function StatsCard({ title, value, icon, trend = 'none', color = 'blue' }: StatsCardProps) {
+export function StatsCard({ title, value, icon, trend = 'none', color = 'slate' }: StatsCardProps) {
   const colorToTone: Record<string, string> = {
-    blue: 'text-blue-700',
-    green: 'text-emerald-700',
+    blue: 'text-slate-700',
+    green: 'text-green-600',
     slate: 'text-slate-700',
-    red: 'text-red-700',
+    red: 'text-red-600',
+  }
+
+  const colorToBg: Record<string, string> = {
+    blue: 'bg-slate-100',
+    green: 'bg-green-50',
+    slate: 'bg-slate-100',
+    red: 'bg-red-50',
   }
 
   return (
-    <Card className="bg-white border border-slate-200 hover:shadow-md transition-all duration-200">
+    <Card className="bg-white border border-slate-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <div className={`p-2 rounded-lg bg-slate-50 ${colorToTone[color]}`}>
+          <div className={`p-2 rounded-xl ${colorToBg[color]} ${colorToTone[color]} shadow-sm`}>
             {icon}
           </div>
           {trend !== 'none' && (
-            <div className={`text-sm ${trend === 'up' ? 'text-emerald-600' : 'text-red-600'}`}>
+            <div className={`text-sm font-medium ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
               {trend === 'up' ? '↗' : '↘'}
             </div>
           )}
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="text-2xl font-semibold text-slate-800 mb-1">{value}</div>
+        <div className="text-2xl font-bold text-slate-900 mb-1">{value}</div>
         <p className="text-sm text-slate-600 font-medium">{title}</p>
       </CardContent>
     </Card>
@@ -62,7 +69,7 @@ export function Dashboard({ stats }: DashboardProps) {
           title="Total"
           value={stats.total}
           icon={<Package className="h-5 w-5" />}
-          color="blue"
+          color="slate"
         />
       </div>
       <div className="w-52">
@@ -71,7 +78,7 @@ export function Dashboard({ stats }: DashboardProps) {
           value={stats.inProgress}
           icon={<Play className="h-5 w-5" />}
           trend={stats.inProgress > 0 ? 'up' : 'none'}
-          color="blue"
+          color="slate"
         />
       </div>
       <div className="w-52">

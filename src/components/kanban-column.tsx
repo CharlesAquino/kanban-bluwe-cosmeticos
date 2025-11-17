@@ -29,6 +29,7 @@ interface KanbanColumnProps {
   onDeleteProduct: (id: string) => void
   onFinalizeProduct: (id: string) => void
   getModOperatorLabel?: (product: Product) => string | null
+  finalizingProducts?: Set<string>
 }
 
 export const KanbanColumn = memo(KanbanColumnBase)
@@ -54,8 +55,9 @@ function KanbanColumnBase({
   onDeleteProduct,
   onFinalizeProduct,
   getModOperatorLabel,
+  finalizingProducts,
 }: KanbanColumnProps) {
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: id,
   })
 
@@ -112,6 +114,7 @@ function KanbanColumnBase({
             onDeleteProduct={onDeleteProduct}
             onFinalize={onFinalizeProduct}
             modOperatorLabel={getModOperatorLabel ? getModOperatorLabel(product) : null}
+            finalizingProducts={finalizingProducts}
           />
         ))}
       </div>
@@ -119,7 +122,11 @@ function KanbanColumnBase({
   }
 
   return (
-    <Card className="h-full min-h-[400px] bg-white border border-slate-200 rounded-lg shadow-sm">
+    <Card className={`h-full min-h-[400px] bg-white border rounded-lg transition-all duration-300 flex flex-col ${
+      isOver 
+        ? 'border-blue-400 shadow-lg shadow-blue-100 scale-[1.02] bg-gradient-to-br from-blue-50/50 to-white' 
+        : 'border-slate-200 shadow-sm hover:shadow-md'
+    }`}>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
@@ -135,7 +142,7 @@ function KanbanColumnBase({
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 flex-1 flex flex-col">
         <div
           ref={(el) => {
             setNodeRef(el)
@@ -143,7 +150,11 @@ function KanbanColumnBase({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ;(parentRef as any).current = el as HTMLDivElement
           }}
-          className="space-y-3 min-h-[260px] p-2 rounded-md bg-slate-50 border border-slate-200/60 overflow-y-auto"
+          className={`space-y-3 min-h-[260px] p-2 rounded-md border overflow-y-auto transition-all duration-300 flex-1 ${
+            isOver
+              ? 'bg-blue-100/50 border-blue-300'
+              : 'bg-slate-50 border-slate-200/60'
+          }`}
         >
           <SortableContext items={products.map(p => p.id)} strategy={verticalListSortingStrategy}>
             {renderProductGroup('active', '', 'Em Andamento')}

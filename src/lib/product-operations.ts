@@ -32,11 +32,28 @@ export async function finalizeProduct(productId: string): Promise<ProductOperati
     if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
 
     broadcastChange({ type: 'semi_finished', action: 'create' })
-    // Revalidação imediata nas listas
+    broadcastChange({ type: 'products', action: 'delete' })
+    
+    // Revalidação agressiva das listas
     try {
-      mutate('/api/products')
-      mutate('/api/semi-finished')
-    } catch {}
+      // Limpa completamente o cache
+      mutate('/api/products', undefined, { revalidate: true })
+      mutate('/api/semi-finished', undefined, { revalidate: true })
+      
+      // Força múltiplas atualizações para garantir sincronia
+      await Promise.all([
+        fetch('/api/products', { cache: 'no-store' }),
+        fetch('/api/semi-finished', { cache: 'no-store' })
+      ])
+      
+      // Invalida novamente após as chamadas
+      setTimeout(() => {
+        mutate('/api/products', undefined, { revalidate: true })
+      }, 100)
+    } catch (error) {
+      console.warn('Erro ao revalidar cache:', error)
+    }
+    
     return { success: true, data: data.data }
   } catch (error) {
     console.error('Erro ao finalizar produto:', error)

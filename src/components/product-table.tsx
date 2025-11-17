@@ -27,6 +27,7 @@ interface ProductTableProps {
   onDeleteProduct: (id: string) => void
   onFinalizeProduct: (id: string) => void
   modOperators?: { id: string; name: string; role?: string | null; isActive?: boolean }[]
+  finalizingProducts?: Set<string>
 }
 
 export function ProductTable({
@@ -38,6 +39,7 @@ export function ProductTable({
   onDeleteProduct,
   onFinalizeProduct,
   modOperators,
+  finalizingProducts,
 }: ProductTableProps) {
   const [draggedProduct, setDraggedProduct] = useState<Product | null>(null)
 
@@ -245,11 +247,9 @@ export function ProductTable({
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        {/* Board com rolagem horizontal e colunas proporcionais */}
-        <div className="w-full overflow-x-auto">
-          <div
-            className="grid grid-flow-col auto-cols-[15rem] sm:auto-cols-[16rem] gap-3 pr-2"
-          >
+        {/* Board com 5 cards alinhados horizontalmente */}
+        <div className="w-full">
+          <div className="grid grid-cols-5 gap-3 min-h-[500px] items-stretch">
             {VISIBLE_STAGES.map((stage) => {
               const stageProducts = getProductsByStage(stage)
               const stageLabel = STAGE_LABELS[stage]
@@ -271,6 +271,7 @@ export function ProductTable({
                   onDeleteProduct={onDeleteProduct}
                   onFinalizeProduct={onFinalizeProduct}
                   getModOperatorLabel={getModOperatorLabel}
+                  finalizingProducts={finalizingProducts}
                 />
               )
             })}
@@ -279,24 +280,35 @@ export function ProductTable({
 
         <DragOverlay>
           {draggedProduct ? (
-            <Card className="w-80 shadow-xl border-2 border-blue-500 rotate-3 bg-white">
+            <Card className="w-80 shadow-2xl border-2 border-slate-400 rotate-2 bg-gradient-to-br from-slate-50 to-white scale-105 opacity-95">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`p-2 ${STAGE_COLORS[draggedProduct.currentStage]} rounded-lg`}>
-                    <Package className="h-4 w-4 text-white" />
+                  <div className={`p-3 ${
+                    String(draggedProduct.currentStage).toUpperCase() === 'PRODUCAO_1KG' ? 'bg-blue-500' :
+                    String(draggedProduct.currentStage).toUpperCase() === 'ANALISE_CQ_PILOTO' ? 'bg-purple-500' :
+                    String(draggedProduct.currentStage).toUpperCase() === 'PRODUCAO_REATOR' ? 'bg-indigo-500' :
+                    String(draggedProduct.currentStage).toUpperCase() === 'ANALISE_REATOR' ? 'bg-pink-500' :
+                    String(draggedProduct.currentStage).toUpperCase() === 'APROVADO' ? 'bg-green-500' :
+                    'bg-slate-500'
+                  } rounded-lg shadow-lg`}>
+                    <Package className="h-5 w-5 text-white" />
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{draggedProduct.name}</h4>
-                    <p className="text-sm text-gray-500">OP: {draggedProduct.op}</p>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-slate-900 text-sm">{draggedProduct.name}</h4>
+                    <p className="text-xs text-slate-600">{draggedProduct.op} • {draggedProduct.batch}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <span className="font-semibold">{draggedProduct.quantity}kg</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <Badge className={`${STAGE_COLORS[draggedProduct.currentStage]} w-fit`}>
+                  <Badge className="bg-slate-100 text-slate-700 text-xs">
                     {STAGE_LABELS[draggedProduct.currentStage]}
                   </Badge>
-                  <span className="text-sm font-medium text-gray-700">
-                    {draggedProduct.quantity.toFixed(2)} kg
-                  </span>
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                    <span>Movendo...</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>

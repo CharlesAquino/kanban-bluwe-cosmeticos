@@ -9,6 +9,13 @@ import { useToast } from '@/components/ui/toast';
 import { apiFetch } from '@/lib/api-fetch';
 import useSWR from 'swr';
 
+interface Operator {
+  id: string;
+  name: string;
+  role?: string | null;
+  isActive: boolean;
+}
+
 interface ProductFormProps {
   onProductCreated: () => void;
 }
@@ -17,7 +24,7 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
   const { showToast } = useToast();
 
   // Buscar operadores MOD
-  const { data: operators, error: operatorsError } = useSWR('/api/mod/operators', async (url) => {
+  const { data: operators } = useSWR<Operator[]>('/api/mod/operators', async (url) => {
     const res = await fetch(url);
     if (!res.ok) throw new Error('Falha ao carregar operadores');
     const json = await res.json();
@@ -188,7 +195,7 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
   }
 
   return (
-    <Card className="w-full bg-white border border-slate-200 shadow-sm">
+    <Card className="w-full bg-white border border-slate-100 shadow-sm">
       <CardHeader className="bg-white">
         <CardTitle className="flex items-center justify-between">
           <span className="inline-flex items-center gap-2">
@@ -233,7 +240,7 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
                   <SelectValue placeholder="Selecione um colaborador MOD" />
                 </SelectTrigger>
                 <SelectContent>
-                  {operators?.filter(op => op.isActive).map((operator) => (
+                  {operators?.filter((op: Operator) => op.isActive).map((operator: Operator) => (
                     <SelectItem key={operator.id} value={operator.id}>
                       {operator.name} {operator.role ? `(${operator.role})` : ''}
                     </SelectItem>
@@ -244,7 +251,7 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
             </div>
           </div>
           <div className="space-y-4">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
               <h4 className="text-sm font-semibold text-slate-700 mb-2">Pré-visualização de baldes</h4>
               {qtyNumber > 0 ? (
                 <>
@@ -268,7 +275,7 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
                 <p className="text-sm text-slate-500">Informe a quantidade para visualizar os baldes que serão gerados.</p>
               )}
             </div>
-            <Button type="submit" className="w-full bg-blue-800 hover:bg-blue-700 text-white" disabled={isSubmitting}>
+            <Button type="submit" className="w-full bg-gradient-to-r from-slate-500 via-slate-600 to-slate-700 hover:from-slate-600 hover:via-slate-700 hover:to-slate-800 text-white shadow-lg shadow-slate-500/30 hover:shadow-slate-500/50 transition-all duration-200" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

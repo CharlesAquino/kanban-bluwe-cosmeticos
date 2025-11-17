@@ -46,6 +46,10 @@ export default function DashboardPage() {
     loadIntegratedData()
   }, [])
 
+  const handleRefresh = async () => {
+    await loadIntegratedData()
+  }
+
   const loadIntegratedData = async () => {
     try {
       setLoading(true)
@@ -300,7 +304,7 @@ export default function DashboardPage() {
               {/* Botão de atualização */}
               <Button
                 onClick={handleRefresh}
-                disabled={isLoading}
+                disabled={loading}
                 className="bg-gradient-to-r from-slate-600 to-slate-700 text-white border-0 shadow-lg shadow-slate-500/30 hover:shadow-slate-500/50 hover:-translate-y-0.5 transition-all duration-200 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-lg"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />

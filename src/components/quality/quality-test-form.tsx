@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Beaker, CheckCircle, XCircle, Plus } from 'lucide-react'
+import { Beaker, CheckCircle, XCircle, Plus, Settings, FileText, BarChart3, TrendingUp } from 'lucide-react'
 import { useGlobalData } from '@/contexts/global-context'
 import { SemiItem, semiFinishedFetcher } from '@/lib/semi-finished-lib'
 
@@ -75,7 +75,7 @@ export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
           ...prev,
           productId: product.id,
           batch: product.batch || '',
-          stage: (product as any).currentStage ?? '',
+          stage: (product as { currentStage?: string }).currentStage ?? '',
         }))
       }
     } else if (source === 'semi') {
@@ -172,164 +172,271 @@ export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Análise
+        <Button className="bg-gradient-to-r from-slate-500 via-slate-600 to-slate-700 text-white border-0 shadow-lg shadow-slate-500/30 hover:shadow-slate-500/50 hover:-translate-y-0.5 transition-all duration-200 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+          <div className="flex items-center gap-2">
+            <div className="rounded-lg bg-slate-400/20 p-1">
+              <Plus className="h-3 w-3 text-slate-200" />
+            </div>
+            <span>Nova Análise</span>
+          </div>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Beaker className="h-5 w-5" />
-            Registrar Análise de Qualidade
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-100 bg-white/95 backdrop-blur-xl shadow-2xl">
+        <DialogHeader className="space-y-3 pb-2">
+          <DialogTitle className="flex items-center gap-3">
+            <div className="rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 text-slate-700 p-3 shadow-inner">
+              <Beaker className="h-6 w-6" />
+            </div>
+            <div>
+              <span className="bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent font-semibold text-lg">
+                Registrar Análise de Qualidade
+              </span>
+              <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+                Preencha os dados da análise de parâmetros críticos
+              </p>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {/* Seleção do Produto */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3">
             <div>
-              <Label htmlFor="product">Produto</Label>
+              <Label htmlFor="product" className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2">
+                <div className="rounded-md bg-slate-100 p-1">
+                  <Beaker className="h-3 w-3 text-slate-600" />
+                </div>
+                Produto
+              </Label>
               <Select
                 value={formData.productId ? `kanban:${formData.productId}` : ''}
                 onValueChange={handleProductChange}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 transition-all duration-200 hover:border-slate-300">
                   <SelectValue placeholder="Selecione o produto" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl border-slate-200 bg-white/95 backdrop-blur-sm shadow-xl">
                   {products.map((product) => (
-                    <SelectItem key={product.id} value={`kanban:${product.id}`}>
-                      [Kanban] {product.name} - {product.op}
+                    <SelectItem key={product.id} value={`kanban:${product.id}`} className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                        [Kanban] {product.name} - {product.op}
+                      </div>
                     </SelectItem>
                   ))}
                   {semiItems.map((item) => (
-                    <SelectItem key={item.id} value={`semi:${item.id}`}>
-                      [Semi] {item.name} - {item.op}
+                    <SelectItem key={item.id} value={`semi:${item.id}`} className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                        [Semi] {item.name} - {item.op}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="operator">Operador</Label>
+              <Label htmlFor="operator" className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2">
+                <div className="rounded-md bg-slate-100 p-1">
+                  <Settings className="h-3 w-3 text-slate-600" />
+                </div>
+                Operador
+              </Label>
               <Input
                 id="operator"
                 placeholder="Nome do operador"
                 value={formData.operator}
                 onChange={(e) => setFormData(prev => ({ ...prev, operator: e.target.value }))}
                 required
+                className="h-11 rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 transition-all duration-200 hover:border-slate-300"
               />
             </div>
           </div>
 
           {/* Informações do Produto */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3">
             <div>
-              <Label htmlFor="batch">Lote</Label>
+              <Label htmlFor="batch" className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2">
+                <div className="rounded-md bg-slate-100 p-1">
+                  <FileText className="h-3 w-3 text-slate-600" />
+                </div>
+                Lote
+              </Label>
               <Input
                 id="batch"
                 value={formData.batch}
                 onChange={(e) => setFormData(prev => ({ ...prev, batch: e.target.value }))}
                 required
+                className="h-11 rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 transition-all duration-200 hover:border-slate-300"
               />
             </div>
             <div>
-              <Label htmlFor="stage">Estágio</Label>
+              <Label htmlFor="stage" className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2">
+                <div className="rounded-md bg-slate-100 p-1">
+                  <TrendingUp className="h-3 w-3 text-slate-600" />
+                </div>
+                Estágio
+              </Label>
               <Input
                 id="stage"
                 value={formData.stage}
                 readOnly
-                className="bg-gray-50"
+                className="h-11 rounded-xl border-emerald-200 bg-emerald-50/80 backdrop-blur-sm text-slate-700 font-medium"
               />
             </div>
           </div>
 
           {/* Parâmetro e Valor */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-3">
             <div>
-              <Label htmlFor="parameter">Parâmetro</Label>
+              <Label htmlFor="parameter" className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2">
+                <div className="rounded-md bg-slate-100 p-1">
+                  <Beaker className="h-3 w-3 text-slate-600" />
+                </div>
+                Parâmetro
+              </Label>
               <Select value={formData.parameter} onValueChange={handleParameterChange}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 transition-all duration-200 hover:border-slate-300">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pH">pH</SelectItem>
-                  <SelectItem value="viscosidade">Viscosidade</SelectItem>
-                  <SelectItem value="cor">Cor</SelectItem>
-                  <SelectItem value="densidade">Densidade</SelectItem>
-                  <SelectItem value="estabilidade">Estabilidade</SelectItem>
-                  <SelectItem value="pureza">Pureza</SelectItem>
+                <SelectContent className="rounded-xl border-slate-200 bg-white/95 backdrop-blur-sm shadow-xl">
+                  <SelectItem value="pH" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                      🧪 pH
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="viscosidade" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                      🌊 Viscosidade
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="cor" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                      🎨 Cor
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="densidade" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                      ⚖️ Densidade
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="estabilidade" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                      🔄 Estabilidade
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="pureza" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                      💎 Pureza
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor="measuredValue">Valor Medido</Label>
-              <Input
-                id="measuredValue"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.measuredValue}
-                onChange={(e) => setFormData(prev => ({ ...prev, measuredValue: e.target.value }))}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="unit">Unidade</Label>
-              <Input
-                id="unit"
-                value={formData.unit}
-                readOnly
-                className="bg-gray-50"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="measuredValue" className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2">
+                  <div className="rounded-md bg-slate-100 p-1">
+                    <BarChart3 className="h-3 w-3 text-slate-600" />
+                  </div>
+                  Valor Medido
+                </Label>
+                <Input
+                  id="measuredValue"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.measuredValue}
+                  onChange={(e) => setFormData(prev => ({ ...prev, measuredValue: e.target.value }))}
+                  required
+                  className="h-11 rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 transition-all duration-200 hover:border-slate-300"
+                />
+              </div>
+              <div>
+                <Label htmlFor="unit" className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2">
+                  <div className="rounded-md bg-slate-100 p-1">
+                    <FileText className="h-3 w-3 text-slate-600" />
+                  </div>
+                  Unidade
+                </Label>
+                <Input
+                  id="unit"
+                  value={formData.unit}
+                  readOnly
+                  className="h-11 rounded-xl border-slate-200 bg-slate-50/80 backdrop-blur-sm text-slate-700 font-medium"
+                />
+              </div>
             </div>
           </div>
 
           {/* Especificações e Status */}
-          <Card className="bg-gray-50 border-gray-200">
+          <Card className="rounded-2xl border border-slate-100 bg-gradient-to-br from-slate-50/80 via-white/60 to-slate-50/80 backdrop-blur-sm shadow-lg shadow-slate-500/10">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900">Especificações</h4>
+                <div className="flex items-center gap-2">
+                  <div className="rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 text-slate-700 p-2 shadow-inner">
+                    <BarChart3 className="h-4 w-4" />
+                  </div>
+                  <span className="bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent font-semibold">
+                    Especificações
+                  </span>
+                </div>
                 <div className="flex items-center gap-2">
                   {isNaN(measuredValue) ? (
-                    <Badge variant="outline">Aguardando medição</Badge>
+                    <Badge variant="outline" className="rounded-lg border-slate-200 text-slate-700 bg-slate-50">
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse"></div>
+                        Aguardando medição
+                      </div>
+                    </Badge>
                   ) : isApproved ? (
                     isAttention && formData.parameter === 'cor' ? (
-                      <Badge className="bg-amber-100 text-amber-800 border-amber-200">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Aprovado (Atenção)
+                      <Badge className="rounded-lg bg-amber-50 text-amber-700 border border-amber-200">
+                        <div className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Aprovado (Atenção)
+                        </div>
                       </Badge>
                     ) : (
-                      <Badge className="bg-green-100 text-green-800 border-green-200">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Aprovado
+                      <Badge className="rounded-lg bg-green-50 text-green-700 border border-green-200">
+                        <div className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Aprovado
+                        </div>
                       </Badge>
                     )
                   ) : (
-                    <Badge className="bg-red-100 text-red-800 border-red-200">
-                      <XCircle className="h-3 w-3 mr-1" />
-                      Reprovado
+                    <Badge className="rounded-lg bg-red-50 text-red-700 border border-red-200">
+                      <div className="flex items-center gap-1">
+                        <XCircle className="h-3 w-3" />
+                        Reprovado
+                      </div>
                     </Badge>
                   )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-600">Target</p>
-                  <p className="font-semibold">{specs.target} {specs.unit}</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div className="rounded-xl bg-white/60 backdrop-blur-sm border border-slate-100 p-2">
+                  <p className="text-xs font-medium text-slate-500 mb-1">Target</p>
+                  <p className="font-semibold text-slate-900">{specs.target} {specs.unit}</p>
                 </div>
-                <div>
-                  <p className="text-gray-600">Mínimo</p>
+                <div className="rounded-xl bg-white/60 backdrop-blur-sm border border-slate-100 p-2">
+                  <p className="text-xs font-medium text-slate-500 mb-1">Mínimo</p>
                   <p className="font-semibold text-red-600">{specs.min} {specs.unit}</p>
                 </div>
-                <div>
-                  <p className="text-gray-600">Máximo</p>
+                <div className="rounded-xl bg-white/60 backdrop-blur-sm border border-slate-100 p-2">
+                  <p className="text-xs font-medium text-slate-500 mb-1">Máximo</p>
                   <p className="font-semibold text-red-600">{specs.max} {specs.unit}</p>
                 </div>
-                <div>
-                  <p className="text-gray-600">Medido</p>
+                <div className="rounded-xl bg-white/60 backdrop-blur-sm border border-slate-100 p-2">
+                  <p className="text-xs font-medium text-slate-500 mb-1">Medido</p>
                   <p
                     className={`font-semibold ${
                       isNaN(measuredValue)
@@ -346,38 +453,62 @@ export function QualityTestForm({ onTestAdded }: QualityTestFormProps) {
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500 mt-2">{specs.description}</p>
+              <p className="text-xs text-slate-500 mt-3 leading-relaxed bg-slate-50/50 rounded-lg p-2 border border-slate-100">
+                {specs.description}
+              </p>
             </CardContent>
           </Card>
 
           {/* Observações */}
           <div>
-            <Label htmlFor="notes">Observações (opcional)</Label>
+            <Label htmlFor="notes" className="text-sm font-medium text-slate-700 mb-1.5 flex items-center gap-2">
+              <div className="rounded-md bg-slate-100 p-1">
+                <FileText className="h-3 w-3 text-slate-600" />
+              </div>
+              Observações (opcional)
+            </Label>
             <Textarea
               id="notes"
               placeholder="Observações sobre a análise, desvios, ou ações tomadas..."
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              rows={3}
+              rows={2}
+              className="rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 transition-all duration-200 hover:border-slate-300 resize-none"
             />
           </div>
 
           {/* Botões */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsOpen(false)}
-              className="flex-1"
+              className="flex-1 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancelar
+              <div className="flex items-center justify-center gap-2">
+                <div className="rounded-md bg-slate-100 p-1">
+                  <XCircle className="h-3 w-3 text-slate-600" />
+                </div>
+                <span>Cancelar</span>
+              </div>
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting || !formData.productId || !formData.measuredValue}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              className="flex-1 bg-gradient-to-r from-slate-500 via-slate-600 to-slate-700 text-white border-0 shadow-lg shadow-slate-500/30 hover:shadow-slate-500/50 hover:-translate-y-0.5 transition-all duration-200 rounded-xl px-4 py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-lg"
             >
-              {isSubmitting ? 'Registrando...' : 'Registrar Análise'}
+              <div className="flex items-center justify-center gap-2">
+                {isSubmitting ? (
+                  <div className="relative w-4 h-4">
+                    <div className="absolute inset-0 rounded-full border-2 border-slate-200 border-t-slate-500 animate-spin"></div>
+                  </div>
+                ) : (
+                  <div className="rounded-lg bg-slate-400/20 p-1">
+                    <CheckCircle className="h-3 w-3 text-slate-200" />
+                  </div>
+                )}
+                <span>{isSubmitting ? 'Registrando...' : 'Registrar Análise'}</span>
+              </div>
             </Button>
           </div>
         </form>

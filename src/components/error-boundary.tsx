@@ -95,4 +95,16 @@ function DefaultErrorFallback({ error, reset }: { error?: Error; reset: () => vo
       </div>
     </div>
   )
-}\n\n// Hook para uso em componentes funcionais\nexport function useErrorHandler() {\n  return (error: Error) => {\n    console.error('Error handled by useErrorHandler:', error)\n    \n    // Em produção, enviar para serviço de monitoramento\n    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {\n      // Ex: Sentry.captureException(error)\n    }\n  }\n}"
+}
+
+// Hook para uso em componentes funcionais
+export function useErrorHandler() {
+  return (error: Error) => {
+    console.error('Error handled by useErrorHandler:', error)
+    
+    // Em produção, enviar para serviço de monitoramento
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+      // Ex: Sentry.captureException(error)
+    }
+  }
+}

@@ -102,7 +102,10 @@ describe('Products API', () => {
       const mockParams = { id: 'test-id' }
       
       // Mock da função DELETE para teste
-      const response = await DELETE(new Request('http://localhost'), { params: mockParams })
+      const mockRequest = {
+        url: 'http://localhost/api/products/test-id'
+      } as any
+      const response = await DELETE(mockRequest, { params: mockParams })
       const data = await response.json()
 
       // Verificar se a resposta tem estrutura esperada

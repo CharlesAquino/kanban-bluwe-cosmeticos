@@ -300,17 +300,6 @@ export default function Home() {
                       </div>
                     </Link>
                     <Link
-                      href="/kanban-overview"
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
-                      onClick={() => setDashboardDropdownOpen(false)}
-                    >
-                      <Package className="h-4 w-4 text-slate-500" />
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">Kanban</span>
-                        <span className="text-xs text-slate-500">Visão geral Kanban</span>
-                      </div>
-                    </Link>
-                    <Link
                       href="/semi-finished-overview"
                       className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
                       onClick={() => setDashboardDropdownOpen(false)}
