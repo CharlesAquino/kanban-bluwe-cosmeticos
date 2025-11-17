@@ -1,4 +1,4 @@
-// Componente Tabs simples para CEP - versão simplificada
+// Componente Tabs simples - versão genérica
 'use client'
 
 export function Tabs({ children, className }: { children: React.ReactNode, className?: string }) {

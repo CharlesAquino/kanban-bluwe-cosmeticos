@@ -23,12 +23,6 @@ type MonitoringData = {
   lastUpdate: string
 }
 
-// Tipos BPM e CEP
-type BPMProcess = { id: string; name: string; status: 'active' | 'paused' | 'completed'; efficiency: number }
-type ControlChart = { name: string; status: 'normal' | 'alert'; lastValue: number }
-type CapabilityIndex = { process: string; cp: number; cpk: number }
-type Trend = { metric: string; trend: 'up' | 'down'; change: string }
-type ProcessEvent = Record<string, unknown>
 
 // Interfaces melhoradas para type safety
 export interface GlobalState {
@@ -45,22 +39,6 @@ export interface GlobalState {
   // Controle hora a hora
   monitoringData: MonitoringData[]
   hourlyControls: HourlyControl[]
-
-  // BPM (Business Process Management)
-  bpmProcesses: BPMProcess[]
-  bpmMetrics: {
-    totalProcesses: number
-    activeProcesses: number
-    completedProcesses: number
-    averageEfficiency: number
-  }
-
-  // CEP (Análise Estatística)
-  cepData: {
-    controlCharts: ControlChart[]
-    capabilityIndices: CapabilityIndex[]
-    trends: Trend[]
-  }
 
   // Sistema de monitoramento
   processHistory: ProcessEvent[]
@@ -87,8 +65,6 @@ type GlobalAction =
   | { type: 'SET_STATS'; payload: GlobalState['stats'] }
   | { type: 'SET_MONITORING_DATA'; payload: MonitoringData[] }
   | { type: 'SET_HOURLY_CONTROLS'; payload: HourlyControl[] }
-  | { type: 'SET_BPM_DATA'; payload: { processes: BPMProcess[]; metrics: GlobalState['bpmMetrics'] } }
-  | { type: 'SET_CEP_DATA'; payload: GlobalState['cepData'] }
   | { type: 'ADD_PROCESS_EVENT'; payload: ProcessEvent }
   | { type: 'SET_SETTINGS'; payload: Partial<GlobalState['settings']> }
   | { type: 'UPDATE_TIMESTAMP' }
@@ -105,18 +81,6 @@ const initialState: GlobalState = {
   },
   monitoringData: [],
   hourlyControls: [],
-  bpmProcesses: [],
-  bpmMetrics: {
-    totalProcesses: 0,
-    activeProcesses: 0,
-    completedProcesses: 0,
-    averageEfficiency: 0
-  },
-  cepData: {
-    controlCharts: [],
-    capabilityIndices: [],
-    trends: []
-  },
   processHistory: [],
   settings: {
     autoRefresh: false, // ❌ DESABILITADO por padrão para evitar loops
@@ -144,14 +108,6 @@ function globalReducer(state: GlobalState, action: GlobalAction): GlobalState {
       return { ...state, monitoringData: action.payload }
     case 'SET_HOURLY_CONTROLS':
       return { ...state, hourlyControls: action.payload }
-    case 'SET_BPM_DATA':
-      return {
-        ...state,
-        bpmProcesses: action.payload.processes,
-        bpmMetrics: action.payload.metrics
-      }
-    case 'SET_CEP_DATA':
-      return { ...state, cepData: action.payload }
     case 'ADD_PROCESS_EVENT':
       return {
         ...state,
@@ -225,9 +181,6 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
       // Dados de monitoramento (placeholder vazio até termos API)
       dispatch({ type: 'SET_MONITORING_DATA', payload: [] })
 
-      // BPM/CEP sem mocks (vazios por enquanto)
-      dispatch({ type: 'SET_BPM_DATA', payload: { processes: [], metrics: { totalProcesses: 0, activeProcesses: 0, completedProcesses: 0, averageEfficiency: 0 } } })
-      dispatch({ type: 'SET_CEP_DATA', payload: { controlCharts: [], capabilityIndices: [], trends: [] } })
 
       dispatch({ type: 'UPDATE_TIMESTAMP' })
       console.log('✅ Todos os dados carregados com sucesso!')

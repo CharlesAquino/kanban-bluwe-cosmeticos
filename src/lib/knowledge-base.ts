@@ -63,7 +63,7 @@ export const KANBAN_KNOWLEDGE_BASE = {
   ],
 
   ui_components: {
-    main: ["Dashboard", "Kanban", "Semi-Acabados", "Controle Hora a Hora", "CEP", "BPM"],
+    main: ["Dashboard", "Kanban", "Semi-Acabados", "Controle Hora a Hora"],
     actions: [
       "Criar produto",
       "Avançar estágio",

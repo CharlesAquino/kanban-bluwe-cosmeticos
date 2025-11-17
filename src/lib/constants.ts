@@ -6,7 +6,7 @@
  * - Type Safety: Tipagem adequada
  */
 
-import type { ProductStage, ProductStatus, Shift, EfficiencyStatus, ControlChartType, AnalysisType, TrendType, ProcessStatus, ActivityType, InstanceStatus } from './types'
+import type { ProductStage, ProductStatus, Shift, EfficiencyStatus } from './types'
 
 // ========== TURNOS ==========
 export const SHIFTS = [
@@ -102,80 +102,6 @@ export const EFFICIENCY_STATUS_COLORS: Record<EfficiencyStatus, string> = {
   behind: 'bg-red-100 text-red-800',
   ahead: 'bg-green-100 text-green-800',
   completed: 'bg-gray-100 text-gray-800'
-} as const
-
-// ========== CARTAS DE CONTROLE ==========
-export const CONTROL_CHART_TYPE_LABELS: Record<ControlChartType, string> = {
-  x_bar_r: 'X-barra e R (Médias e Amplitudes)',
-  x_bar_s: 'X-barra e S (Médias e Desvios Padrão)',
-  i_mr: 'Individuais e Amplitude Móvel',
-  p: 'Proporção de Defeituosos',
-  np: 'Número de Defeitos',
-  c: 'Número de Defeitos',
-  u: 'Defeitos por Unidade'
-} as const
-
-// ========== ANÁLISES ==========
-export const ANALYSIS_TYPE_LABELS: Record<AnalysisType, string> = {
-  basic_stats: 'Estatísticas Básicas',
-  trend_analysis: 'Análise de Tendência',
-  capability: 'Análise de Capacidade',
-  stability: 'Análise de Estabilidade',
-  comparison: 'Comparação de Períodos'
-} as const
-
-export const TREND_TYPE_LABELS: Record<TrendType, string> = {
-  increasing: 'Tendência Crescente',
-  decreasing: 'Tendência Decrescente',
-  stable: 'Estável',
-  cyclic: 'Cíclico',
-  erratic: 'Errático'
-} as const
-
-// ========== BPM (Business Process Management) ==========
-export const PROCESS_STATUS_LABELS: Record<ProcessStatus, string> = {
-  draft: 'Rascunho',
-  active: 'Ativo',
-  inactive: 'Inativo',
-  deprecated: 'Descontinuado'
-} as const
-
-export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
-  user_task: 'Tarefa Humana',
-  service_task: 'Tarefa Automática',
-  script_task: 'Tarefa de Script',
-  manual_task: 'Tarefa Manual',
-  decision_task: 'Tarefa de Decisão',
-  parallel_gateway: 'Gateway Paralelo',
-  exclusive_gateway: 'Gateway Exclusivo',
-  inclusive_gateway: 'Gateway Inclusivo'
-} as const
-
-export const INSTANCE_STATUS_LABELS: Record<InstanceStatus, string> = {
-  ready: 'Pronto',
-  running: 'Executando',
-  completed: 'Concluído',
-  failed: 'Falhou',
-  cancelled: 'Cancelado',
-  suspended: 'Suspenso',
-  waiting: 'Aguardando'
-} as const
-
-export const PROCESS_STATUS_COLORS: Record<ProcessStatus, string> = {
-  draft: 'bg-gray-100 text-gray-800',
-  active: 'bg-green-100 text-green-800',
-  inactive: 'bg-red-100 text-red-800',
-  deprecated: 'bg-yellow-100 text-yellow-800'
-} as const
-
-export const INSTANCE_STATUS_COLORS: Record<InstanceStatus, string> = {
-  ready: 'bg-blue-100 text-blue-800',
-  running: 'bg-green-100 text-green-800',
-  completed: 'bg-gray-100 text-gray-800',
-  failed: 'bg-red-100 text-red-800',
-  cancelled: 'bg-yellow-100 text-yellow-800',
-  suspended: 'bg-orange-100 text-orange-800',
-  waiting: 'bg-purple-100 text-purple-800'
 } as const
 
 // ========== VALIDAÇÕES ==========
