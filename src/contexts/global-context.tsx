@@ -23,6 +23,13 @@ type MonitoringData = {
   lastUpdate: string
 }
 
+// Tipo para eventos do processo
+type ProcessEvent = {
+  id: string
+  type: string
+  timestamp: string
+  data?: Record<string, unknown>
+}
 
 // Interfaces melhoradas para type safety
 export interface GlobalState {
