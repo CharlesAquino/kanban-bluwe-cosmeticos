@@ -403,7 +403,7 @@ export default function AnaliseOperadorPage() {
               <Users className="h-5 w-5 text-indigo-600" />
               Equipe de Operadores
             </h2>
-            <p className="text-sm text-slate-600 hidden sm:block flex items-center gap-2">
+            <p className="text-sm text-slate-600 hidden sm:flex items-center gap-2">
               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
                 <Target className="h-3 w-3" />
                 Performance
