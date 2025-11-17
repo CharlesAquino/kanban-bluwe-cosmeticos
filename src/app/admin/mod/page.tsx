@@ -133,17 +133,17 @@ export default function ModAdminPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-6xl space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      {/* Título da Página */}
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+          <UserCog className="h-8 w-8" />
+        </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Administração – MOD</h1>
-          <p className="text-gray-600 text-sm">
+          <h1 className="text-3xl font-bold text-gray-900">Administração – MOD</h1>
+          <p className="text-gray-600 text-sm mt-2">
             Cadastro de operadores (MOD) e registro de atividades de produção e administrativas.
           </p>
         </div>
-        <Button type="button" onClick={startNewOperator} className="flex items-center gap-2">
-          <UserPlus className="h-4 w-4" />
-          Novo MOD
-        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

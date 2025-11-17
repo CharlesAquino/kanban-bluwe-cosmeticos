@@ -14,12 +14,10 @@ import {
   TrendingUp,
   Beaker,
   FileText,
-  Activity,
+  RefreshCw,
   BarChart3,
   Settings,
-  RefreshCw,
 } from 'lucide-react'
-import Link from 'next/link'
 import { useGlobalData, useGlobalActions } from '@/contexts/global-context'
 import { QualityTestForm } from '@/components/quality/quality-test-form'
 import { NonConformityForm } from '@/components/quality/non-conformity-form'
@@ -30,7 +28,6 @@ export default function QualityAdminPage() {
   const { refreshData } = useGlobalActions()
   const [qualityData, setQualityData] = useState<QualityParameter[]>([])
   const [nonConformities, setNonConformities] = useState<NonConformity[]>([])
-  const [isLoading, setIsLoading] = useState(false)
 
   const [filterProduct, setFilterProduct] = useState<string>('all')
   const [filterParameter, setFilterParameter] = useState<string>('all')
@@ -64,13 +61,6 @@ export default function QualityAdminPage() {
     await Promise.all([fetchQualityTests(), fetchNonConformities()])
   }
 
-  const handleRefresh = async () => {
-    setIsLoading(true)
-    await refreshData()
-    await reloadAll()
-    setIsLoading(false)
-  }
-
   const filteredQualityData = qualityData.filter((test) => {
     if (filterProduct !== 'all' && test.productId !== filterProduct) return false
     if (filterParameter !== 'all' && test.parameter !== filterParameter) return false
@@ -88,6 +78,20 @@ export default function QualityAdminPage() {
         ? (filteredQualityData.filter((q) => q.approved).length / filteredQualityData.length) * 100
         : 0,
     openNonConformities: nonConformities.filter((nc) => nc.status !== 'closed').length,
+  }
+
+  const getTestVisualStatus = (test: QualityParameter) => {
+    if (!test.approved) return 'rejected'
+
+    if (test.tolerance) {
+      const span = test.tolerance.max - test.tolerance.min
+      const threshold = span * 0.1 // 10% das bordas de tolerância como zona de alerta
+      const nearMin = test.measuredValue <= test.tolerance.min + threshold
+      const nearMax = test.measuredValue >= test.tolerance.max - threshold
+      if (nearMin || nearMax) return 'warning'
+    }
+
+    return 'approved'
   }
 
   const getSeverityColor = (severity: string) => {
@@ -124,43 +128,29 @@ export default function QualityAdminPage() {
   }, [])
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-emerald-200 to-emerald-500 rounded-lg shadow-md shadow-emerald-200/60">
-            <Shield className="h-6 w-6 text-emerald-900" />
+    <div className="min-h-screen bg-[linear-gradient(to-br,oklch(91.7%_0.08_205.041),oklch(98.4%_0.019_200.873))] text-slate-900">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 space-y-8">
+        {/* Título da Página */}
+        <section className="space-y-4">
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg">
+              <Shield className="h-8 w-8" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Administração de Qualidade</h1>
+              <p className="text-lg text-slate-600 mt-2">Sistema Integrado de Qualidade</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-emerald-900">Controle de Qualidade</h1>
-            <p className="text-sm text-emerald-700 font-medium">
-              Registro de análises, RNCs e decisões de quarentena / liberação
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Badge className="hidden sm:inline-flex bg-emerald-900 text-emerald-50 text-[11px] font-semibold tracking-wide">
-            Admin
-          </Badge>
-          <Button onClick={handleRefresh} disabled={isLoading} variant="outline" size="sm">
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Atualizar
-          </Button>
-          <Link href="/" prefetch={false} className="inline-flex">
-            <Button variant="outline" size="sm">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Kanban
-            </Button>
-          </Link>
-        </div>
-      </div>
+        </section>
 
       {/* Alertas de Análises Reprovadas */}
       {qualityData.filter((q) => !q.approved).length > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="rounded-2xl border border-red-100 bg-white/80 backdrop-blur-lg shadow-lg">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-orange-900 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
+            <CardTitle className="text-sm font-medium text-red-900 flex items-center gap-2">
+              <div className="rounded-xl bg-gradient-to-br from-red-400/20 to-red-400/5 text-red-700 p-2 shadow-inner">
+                <AlertTriangle className="h-4 w-4" />
+              </div>
               Alertas de Qualidade ({qualityData.filter((q) => !q.approved).length})
             </CardTitle>
           </CardHeader>
@@ -172,24 +162,24 @@ export default function QualityAdminPage() {
                 .map((test) => (
                   <div
                     key={test.id}
-                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-orange-200 text-sm"
+                    className="flex items-center justify-between p-3 rounded-xl bg-red-50/50 border border-red-100 text-sm hover:bg-red-50 transition-colors duration-200"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0 w-2 h-2 bg-red-500 rounded-full"></div>
+                      <div className="flex-shrink-0 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                       <div>
                         <p className="font-semibold text-gray-900">{test.productName}</p>
                         <p className="text-xs text-gray-600">
-                          {test.parameter}: {test.measuredValue} {test.unit} (Esperado: {test.tolMin}-{test.tolMax})
+                          {test.parameter}: {test.measuredValue} {test.unit} (Esperado: {test.tolerance?.min || 'N/A'}-{test.tolerance?.max || 'N/A'})
                         </p>
                       </div>
                     </div>
-                    <Badge variant="destructive" className="text-xs">
+                    <Badge className="bg-red-50 text-red-700 border border-red-200 text-xs">
                       Reprovado
                     </Badge>
                   </div>
                 ))}
               {qualityData.filter((q) => !q.approved).length > 3 && (
-                <p className="text-xs text-orange-700 text-center pt-2">
+                <p className="text-xs text-red-700 text-center pt-2">
                   +{qualityData.filter((q) => !q.approved).length - 3} análises reprovadas
                 </p>
               )}
@@ -199,86 +189,107 @@ export default function QualityAdminPage() {
       )}
 
       {/* Dashboard Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-700">Taxa de Aprovação</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-900">{Math.round(qualityStats.approvalRate)}%</div>
-            <p className="text-xs text-green-700">
-              {qualityStats.approvedTests}/{qualityStats.totalTests} testes aprovados
-            </p>
-          </CardContent>
-        </Card>
+      <section>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="rounded-2xl border border-slate-100 bg-white/80 backdrop-blur-lg shadow-lg">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 text-slate-700 p-3 shadow-inner">
+                <CheckCircle className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Taxa de aprovação</p>
+                <p className="text-xl font-semibold text-slate-900">
+                  {Math.round(qualityStats.approvalRate)}%
+                </p>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  {qualityStats.approvedTests}/{qualityStats.totalTests} testes aprovados
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-700">RNCs (Registros de Não Conformidades)</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-900">{qualityStats.openNonConformities}</div>
-            <p className="text-xs text-red-700">abertas para resolução</p>
-          </CardContent>
-        </Card>
+          <Card className="rounded-2xl border border-slate-100 bg-white/80 backdrop-blur-lg shadow-lg">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 text-slate-700 p-3 shadow-inner">
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Não conformidades</p>
+                <p className="text-xl font-semibold text-slate-900">
+                  {qualityStats.openNonConformities}
+                </p>
+                <p className="text-xs text-slate-600 mt-0.5">abertas para resolução</p>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700">Testes Hoje</CardTitle>
-            <Beaker className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{qualityStats.totalTests}</div>
-            <p className="text-xs text-blue-700">análises realizadas</p>
-          </CardContent>
-        </Card>
+          <Card className="rounded-2xl border border-slate-100 bg-white/80 backdrop-blur-lg shadow-lg">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 text-slate-700 p-3 shadow-inner">
+                <Beaker className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Testes hoje</p>
+                <p className="text-xl font-semibold text-slate-900">{qualityStats.totalTests}</p>
+                <p className="text-xs text-slate-600 mt-0.5">análises realizadas</p>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-700">Produtos Ativos</CardTitle>
-            <Activity className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-900">{products.length}</div>
-            <p className="text-xs text-purple-700">em produção</p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="rounded-2xl border border-slate-100 bg-white/80 backdrop-blur-lg shadow-lg">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 text-slate-700 p-3 shadow-inner">
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-500">Alertas de qualidade</p>
+                <p className="text-xl font-semibold text-slate-900">
+                  {qualityData.filter(q => !q.approved).length}
+                </p>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  {qualityData.filter(q => !q.approved).length === 0
+                    ? 'nenhum alerta ativo'
+                    : 'análises reprovadas'}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="quality-control" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-slate-900 text-slate-300 rounded-lg">
-          <TabsTrigger
-            value="quality-control"
-            className="flex items-center gap-2 border border-transparent data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:border-blue-500 hover:bg-slate-800/70 hover:border-blue-500 transition-colors"
-          >
-            <Beaker className="h-4 w-4" />
-            Controle da Qualidade
-          </TabsTrigger>
-          <TabsTrigger
-            value="non-conformities"
-            className="flex items-center gap-2 border border-transparent data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:border-blue-500 hover:bg-slate-800/70 hover:border-blue-500 transition-colors"
-          >
-            <AlertTriangle className="h-4 w-4" />
-            RNCs
-          </TabsTrigger>
-          <TabsTrigger
-            value="specifications"
-            className="flex items-center gap-2 border border-transparent data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:border-blue-500 hover:bg-slate-800/70 hover:border-blue-500 transition-colors"
-          >
-            <FileText className="h-4 w-4" />
-            Especificações
-          </TabsTrigger>
-          <TabsTrigger
-            value="reports"
-            className="flex items-center gap-2 border border-transparent data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 data-[state=active]:shadow-sm data-[state=active]:border-blue-500 hover:bg-slate-800/70 hover:border-blue-500 transition-colors"
-          >
-            <BarChart3 className="h-4 w-4" />
-            Relatórios
-          </TabsTrigger>
-        </TabsList>
+      <section className="space-y-4">
+        <Tabs defaultValue="quality-control" className="space-y-6">
+          <TabsList className="w-full grid grid-cols-4 rounded-2xl bg-slate-50/60 backdrop-blur border border-slate-200/80 shadow-sm px-1 py-1">
+            <TabsTrigger
+              value="quality-control"
+              className="flex items-center justify-center gap-2 text-[11px] sm:text-xs font-medium text-slate-700/70 hover:text-slate-900 data-[state=active]:bg-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:scale-[1.01] rounded-xl px-3 py-2.5 transition-all duration-200"
+            >
+              <Beaker className="h-4 w-4" />
+              Controle da Qualidade
+            </TabsTrigger>
+            <TabsTrigger
+              value="non-conformities"
+              className="flex items-center justify-center gap-2 text-[11px] sm:text-xs font-medium text-slate-700/70 hover:text-slate-900 data-[state=active]:bg-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:scale-[1.01] rounded-xl px-3 py-2.5 transition-all duration-200"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Não Conformidades
+            </TabsTrigger>
+            <TabsTrigger
+              value="specifications"
+              className="flex items-center justify-center gap-2 text-[11px] sm:text-xs font-medium text-slate-700/70 hover:text-slate-900 data-[state=active]:bg-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:scale-[1.01] rounded-xl px-3 py-2.5 transition-all duration-200"
+            >
+              <FileText className="h-4 w-4" />
+              Especificações
+            </TabsTrigger>
+            <TabsTrigger
+              value="reports"
+              className="flex items-center justify-center gap-2 text-[11px] sm:text-xs font-medium text-slate-700/70 hover:text-slate-900 data-[state=active]:bg-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:scale-[1.01] rounded-xl px-3 py-2.5 transition-all duration-200"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Relatórios
+            </TabsTrigger>
+          </TabsList>
 
         {/* Controle da Qualidade */}
         <TabsContent value="quality-control" className="space-y-6">
@@ -286,8 +297,12 @@ export default function QualityAdminPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <Beaker className="h-5 w-5" />
-                  Análises de Controle da Qualidade
+                  <div className="rounded-xl bg-gradient-to-br from-indigo-400/20 to-indigo-400/5 text-indigo-700 p-2 shadow-inner">
+                    <Beaker className="h-5 w-5" />
+                  </div>
+                  <span className="bg-gradient-to-r from-indigo-700 to-indigo-900 bg-clip-text text-transparent font-semibold">
+                    Análises de Controle da Qualidade
+                  </span>
                 </CardTitle>
                 <QualityTestForm onTestAdded={reloadAll} />
               </div>
@@ -296,24 +311,38 @@ export default function QualityAdminPage() {
               </p>
             </CardHeader>
             <CardContent>
+              {/* Filtros */}
               {qualityData.length > 0 && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <h4 className="text-sm font-semibold mb-3 text-gray-700">Filtros</h4>
+                <div className="mb-6 p-6 rounded-2xl bg-slate-50/80 backdrop-blur-sm border border-slate-200/50 shadow-lg shadow-slate-500/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></div>
+                      <span className="bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent">
+                        Filtros Inteligentes
+                      </span>
+                    </h4>
+                    <div className="text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded-full">
+                      {filteredQualityData.length} resultados
+                    </div>
+                  </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="filter-product" className="text-xs">
-                        Produto
-                      </Label>
+                      <Label htmlFor="filter-product" className="text-xs font-medium text-slate-700 mb-2 block">Produto</Label>
                       <Select value={filterProduct} onValueChange={setFilterProduct}>
-                        <SelectTrigger id="filter-product" className="h-9">
-                          <SelectValue />
+                        <SelectTrigger id="filter-product" className="h-11 rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 transition-all duration-200 hover:border-slate-300">
+                          <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 bg-white/95 backdrop-blur-sm shadow-xl">
+                          <SelectItem value="all" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                              Todos os produtos
+                            </div>
+                          </SelectItem>
                           {Array.from(new Set(qualityData.map((t) => t.productId))).map((productId) => {
                             const product = products.find((p) => p.id === productId)
                             return (
-                              <SelectItem key={productId} value={productId}>
+                              <SelectItem key={productId} value={productId} className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
                                 {product?.name || productId}
                               </SelectItem>
                             )
@@ -322,53 +351,82 @@ export default function QualityAdminPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="filter-parameter" className="text-xs">
-                        Parâmetro
-                      </Label>
+                      <Label htmlFor="filter-parameter" className="text-xs font-medium text-slate-700 mb-2 block">Parâmetro</Label>
                       <Select value={filterParameter} onValueChange={setFilterParameter}>
-                        <SelectTrigger id="filter-parameter" className="h-9">
-                          <SelectValue />
+                        <SelectTrigger id="filter-parameter" className="h-11 rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 transition-all duration-200 hover:border-slate-300">
+                          <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos</SelectItem>
-                          <SelectItem value="pH">pH</SelectItem>
-                          <SelectItem value="viscosidade">Viscosidade</SelectItem>
-                          <SelectItem value="cor">Cor</SelectItem>
-                          <SelectItem value="densidade">Densidade</SelectItem>
-                          <SelectItem value="estabilidade">Estabilidade</SelectItem>
-                          <SelectItem value="pureza">Pureza</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 bg-white/95 backdrop-blur-sm shadow-xl">
+                          <SelectItem value="all" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                              Todos os parâmetros
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="pH" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">🧪 pH</SelectItem>
+                          <SelectItem value="viscosidade" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">🌊 Viscosidade</SelectItem>
+                          <SelectItem value="cor" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">🎨 Cor</SelectItem>
+                          <SelectItem value="densidade" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">⚖️ Densidade</SelectItem>
+                          <SelectItem value="estabilidade" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">🔄 Estabilidade</SelectItem>
+                          <SelectItem value="pureza" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">💎 Pureza</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="filter-status" className="text-xs">
-                        Status
-                      </Label>
+                      <Label htmlFor="filter-status" className="text-xs font-medium text-slate-700 mb-2 block">Status</Label>
                       <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger id="filter-status" className="h-9">
-                          <SelectValue />
+                        <SelectTrigger id="filter-status" className="h-11 rounded-xl border-slate-200 bg-white/80 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-400/20 transition-all duration-200 hover:border-slate-300">
+                          <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos</SelectItem>
-                          <SelectItem value="approved">Aprovados</SelectItem>
-                          <SelectItem value="rejected">Reprovados</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 bg-white/95 backdrop-blur-sm shadow-xl">
+                          <SelectItem value="all" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                              Todos os status
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="approved" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                              Aprovados
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="rejected" className="rounded-lg text-slate-700 focus:bg-slate-50 focus:text-slate-900">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                              Reprovados
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   {(filterProduct !== 'all' || filterParameter !== 'all' || filterStatus !== 'all') && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-3 text-xs"
-                      onClick={() => {
-                        setFilterProduct('all')
-                        setFilterParameter('all')
-                        setFilterStatus('all')
-                      }}
-                    >
-                      Limpar filtros
-                    </Button>
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="text-xs text-slate-600">
+                        <span className="inline-flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse"></div>
+                          Filtros ativos
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-50 border border-slate-200 rounded-lg transition-all duration-200 hover:border-slate-300 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          setFilterProduct('all')
+                          setFilterParameter('all')
+                          setFilterStatus('all')
+                        }}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <div className="rounded-md bg-slate-100 p-0.5">
+                            <RefreshCw className="h-2.5 w-2.5 text-slate-600" />
+                          </div>
+                          <span>Limpar filtros</span>
+                        </div>
+                      </Button>
+                    </div>
                   )}
                 </div>
               )}
@@ -388,42 +446,63 @@ export default function QualityAdminPage() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {filteredQualityData.map((test) => (
-                    <div
-                      key={test.id}
-                      className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 hover:shadow-md transition-all"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="text-2xl">{getParameterIcon(test.parameter)}</div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{test.productName}</p>
-                          <p className="text-sm text-gray-600">
-                            {test.parameter} • Lote {test.batch} • {test.stage.replace('_', ' ')}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            Operador: {test.operator} • {new Date(test.timestamp).toLocaleString('pt-BR')}
-                          </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+                  {filteredQualityData.map((test) => {
+                    const visualStatus = getTestVisualStatus(test)
+                    const valueColor =
+                      visualStatus === 'approved'
+                        ? 'text-emerald-600'
+                        : visualStatus === 'warning'
+                        ? 'text-amber-600'
+                        : 'text-red-600'
+                    const badgeClass =
+                      visualStatus === 'approved'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : visualStatus === 'warning'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-red-50 text-red-700 border border-red-200'
+                    const badgeLabel =
+                      visualStatus === 'approved'
+                        ? 'Aprovado'
+                        : visualStatus === 'warning'
+                        ? 'Em Alerta'
+                        : 'Reprovado'
+
+                    return (
+                      <div
+                        key={test.id}
+                        className="flex flex-col gap-3 p-4 rounded-2xl border border-slate-50 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ease-out"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="text-2xl">{getParameterIcon(test.parameter)}</div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{test.productName}</p>
+                            <p className="text-sm text-gray-600">
+                              {test.parameter} • Lote {test.batch} • {test.stage.replace('_', ' ')}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Operador: {test.operator} • {new Date(test.timestamp).toLocaleString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="text-right">
+                            <div className="font-mono text-sm">
+                              <span className={valueColor}>{test.measuredValue}</span>
+                              <span className="text-gray-500"> / {test.targetValue} {test.unit}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Tolerância:{' '}
+                              {test.tolerance
+                                ? `${test.tolerance.min}-${test.tolerance.max}`
+                                : 'não definida'}
+                            </div>
+                          </div>
+                          <Badge className={badgeClass}>{badgeLabel}</Badge>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="font-mono text-sm">
-                            <span className={test.approved ? 'text-green-600' : 'text-red-600'}>
-                              {test.measuredValue}
-                            </span>
-                            <span className="text-gray-500"> / {test.targetValue} {test.unit}</span>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Tolerância: {test.tolMin}-{test.tolMax}
-                          </div>
-                        </div>
-                        <Badge variant={test.approved ? 'default' : 'destructive'}>
-                          {test.approved ? 'Aprovado' : 'Reprovado'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </CardContent>
@@ -559,6 +638,8 @@ export default function QualityAdminPage() {
           </Card>
         </TabsContent>
       </Tabs>
+        </section>
+      </div>
     </div>
   )
 }
