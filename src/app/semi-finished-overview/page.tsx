@@ -279,8 +279,9 @@ function OverviewItemCard({ product }: { product: SemiItem }) {
   const { buckets, loading, error } = useSemiFinishedBuckets(product.id)
   const saldo = Number(product.quantity_total) - Number(product.quantity_envasado)
 
-  const packagedCount = buckets.filter((b) => b.status === 'packaged').length
-  const totalBuckets = buckets.length
+  const bucketsArray = buckets || []
+  const packagedCount = bucketsArray.filter((b) => b.status === 'packaged').length
+  const totalBuckets = bucketsArray.length
 
   return (
     <Card className="bg-white/90 border border-sky-100 shadow-md">
