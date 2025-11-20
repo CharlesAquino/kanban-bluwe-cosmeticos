@@ -5,39 +5,16 @@ import { ToastProvider } from '@/components/ui/toast'
 import { AdminNavbar } from '@/components/admin-navbar'
 import ClientGlobalProvider from '@/components/client-global-provider'
 import GlobalStatusBanner from '@/components/global-status-banner'
-import { Shield } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import Link from 'next/link'
 
-export default function AdminLayout({
+export default function CMSLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header Admin */}
-      <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white grid place-items-center shadow-lg">
-                <Shield className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Painel Administrativo</h1>
-                <p className="text-sm text-slate-500">Bluwe Cosméticos - Sistema de Produção</p>
-              </div>
-            </div>
-            <Link 
-              href="/"
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
-            >
-              ← Voltar para o Sistema
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <ToastProvider>
         <AdminNavbar />
         <ClientGlobalProvider>

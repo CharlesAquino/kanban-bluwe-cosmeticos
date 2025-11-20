@@ -8,6 +8,7 @@
 'use client'
 
 import { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 import type { Product, HourlyControl, ProductStage, ProductStatus } from '@/lib/types-modern'
 
 // Tipos necessários
@@ -147,6 +148,7 @@ const GlobalContext = createContext<{
 // Provider otimizado
 export function GlobalProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(globalReducer, initialState)
+  const pathname = usePathname()
 
   // Carregar dados - integrado às APIs reais
   const loadAllData = useCallback(async () => {
@@ -221,9 +223,15 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
 
   // Carregar dados iniciais - apenas uma vez - CORRIGIDO
   useEffect(() => {
+    // Evitar carregamento global na tela de login admin
+    if (pathname === '/admin/login') {
+      console.log('🚀 GlobalProvider ativo, mas ignorando carregamento global em /admin/login')
+      return
+    }
+
     console.log('🚀 Inicializando contexto global...')
     loadAllData()
-  }, [loadAllData]) // ✅ Dependência correta - loadAllData está memoizado
+  }, [loadAllData, pathname]) // ✅ Dependências corretas
 
   // Auto-refresh se habilitado - versão segura - CORRIGIDO
   useEffect(() => {

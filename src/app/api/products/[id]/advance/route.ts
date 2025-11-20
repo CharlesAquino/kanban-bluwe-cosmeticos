@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { getDb } from '@/lib/db'
 
 export async function POST(
   request: NextRequest,
@@ -35,10 +35,9 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Buscar produto atual com Prisma
-    const product = await prisma.product.findUnique({
-      where: { id }
-    })
+    // Buscar produto atual com better-sqlite3
+    const db = getDb()
+    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(id) as any
 
     if (!product) {
       return NextResponse.json({
@@ -47,14 +46,18 @@ export async function POST(
       }, { status: 404 })
     }
 
-    // Atualizar produto com Prisma
-    const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: {
-        currentStage: nextStage,
-        updatedAt: new Date()
-      }
-    })
+    // Atualizar produto com better-sqlite3
+    const updatedAt = new Date().toISOString()
+    const stmt = db.prepare(`
+      UPDATE products 
+      SET currentStage = ?, updatedAt = ? 
+      WHERE id = ?
+    `)
+    
+    stmt.run(nextStage, updatedAt, id)
+    
+    // Buscar produto atualizado
+    const updatedProduct = db.prepare('SELECT * FROM products WHERE id = ?').get(id) as any
 
     console.log('Produto avançado:', updatedProduct)
 

@@ -91,10 +91,22 @@ function ensureSchema(connection: Database.Database) {
       quantity_total REAL NOT NULL,
       quantity_envasado REAL NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'aguardando',
+      manufactureDate TEXT,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL
     )
   `)
+
+  // Migração: adicionar coluna manufactureDate se ainda não existir
+  try {
+    const semiCols = connection.prepare(`PRAGMA table_info(semi_finished_items)`).all() as Array<{ name: string }>
+    const hasManufacture = semiCols.some((c) => c.name === 'manufactureDate')
+    if (!hasManufacture) {
+      connection.exec(`ALTER TABLE semi_finished_items ADD COLUMN manufactureDate TEXT`)
+    }
+  } catch {
+    // noop
+  }
 
   // Tabela de famílias (opcional)
   connection.exec(`

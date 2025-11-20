@@ -10,6 +10,7 @@ export type SemiItem = {
   quantity_total: number
   quantity_envasado: number
   status: string
+  manufactureDate?: string
 }
 
 export type Bucket = {

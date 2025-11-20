@@ -14,6 +14,8 @@ import Link from 'next/link'
 export default function SemiFinishedPage() {
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
   const [overviewDropdownOpen, setOverviewDropdownOpen] = useState(false)
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiText, setAiText] = useState<string | null>(null)
   
   const { data, error, isLoading } = useSWR<SemiItem[]>('/api/semi-finished', semiFinishedFetcher, {
     revalidateOnFocus: false,
@@ -28,6 +30,7 @@ export default function SemiFinishedPage() {
   const [legacyOp, setLegacyOp] = useState('')
   const [legacyBatch, setLegacyBatch] = useState('')
   const [legacyQty, setLegacyQty] = useState('')
+  const [legacyMfgDate, setLegacyMfgDate] = useState('')
   const [legacyBusy, setLegacyBusy] = useState(false)
   const [legacyError, setLegacyError] = useState<string | null>(null)
 
@@ -60,8 +63,82 @@ export default function SemiFinishedPage() {
     const totalSaldo = items.reduce((sum, item) => sum + (Number(item.quantity_total) - Number(item.quantity_envasado)), 0)
     const familias = Object.keys(groups).length
 
-    return { totalProdutos, aguardando, totalSaldo, familias }
+    const today = new Date()
+    const millisPerDay = 1000 * 60 * 60 * 24
+
+    let comData = 0
+    let criticosMenos6m = 0
+    let proximos12m = 0
+
+    for (const it of items) {
+      if (!it.manufactureDate) continue
+      const mfg = new Date(it.manufactureDate)
+      if (Number.isNaN(mfg.getTime())) continue
+      comData++
+
+      const expiry = new Date(mfg)
+      expiry.setFullYear(expiry.getFullYear() + 2)
+      const diffDays = Math.round((expiry.getTime() - today.getTime()) / millisPerDay)
+
+      if (diffDays <= 180) criticosMenos6m++
+      else if (diffDays <= 365) proximos12m++
+    }
+
+    return { totalProdutos, aguardando, totalSaldo, familias, validade: { comData, criticosMenos6m, proximos12m } }
   }, [items, groups])
+
+  const handleRunSemiAssistant = async () => {
+    try {
+      setAiBusy(true)
+      setAiText(null)
+
+      const v = dashboardStats.validade
+      const summary = `Produtos ativos: ${dashboardStats.totalProdutos}. Itens aguardando ação: ${dashboardStats.aguardando}. Saldo total: ${dashboardStats.totalSaldo.toFixed(1)} kg. Número de famílias: ${dashboardStats.familias}. Itens com data de fabricação registrada: ${v.comData}. Itens com menos de 6 meses para vencer: ${v.criticosMenos6m}. Itens entre 6 e 12 meses para vencer: ${v.proximos12m}.`
+
+      const res = await fetch('/api/ai/orchestrator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Você é um assistente especializado em gestão de semi-acabados, validade (dois anos após fabricação) e eficiência de estoque da Bluwe Cosméticos. Analise riscos de vencimento, gargalos de envase e oportunidades de melhoria.',
+            },
+            {
+              role: 'user',
+              content:
+                'Com base no resumo a seguir, faça uma análise objetiva de riscos de validade, prioridades de envase e ações recomendadas. Considere que a validade padrão é de 2 anos após a fabricação, mesmo que as datas não estejam totalmente disponíveis ainda. Resumo: ' +
+                summary,
+            },
+          ],
+        }),
+      })
+
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json) {
+        setAiText('Não foi possível obter uma resposta do assistente de Semi-Acabados agora.')
+        return
+      }
+
+      const result = json.result ?? json
+      let text: string | null = null
+
+      if (typeof result === 'string') {
+        text = result
+      } else if (result?.choices?.[0]?.message?.content) {
+        text = result.choices[0].message.content as string
+      } else if (result?.output_text) {
+        text = result.output_text as string
+      }
+
+      setAiText(text ?? JSON.stringify(result, null, 2))
+    } catch {
+      setAiText('Erro ao contatar o assistente de Semi-Acabados.')
+    } finally {
+      setAiBusy(false)
+    }
+  }
 
   const handleLegacyInsert = async () => {
     try {
@@ -82,6 +159,7 @@ export default function SemiFinishedPage() {
           op: legacyOp,
           batch: legacyBatch,
           quantity_total: qty,
+          manufactureDate: legacyMfgDate || undefined,
         }),
       })
       const json = await res.json().catch(() => null)
@@ -93,6 +171,7 @@ export default function SemiFinishedPage() {
         setLegacyOp('')
         setLegacyBatch('')
         setLegacyQty('')
+        setLegacyMfgDate('')
         mutate('/api/semi-finished')
       }
     } catch {
@@ -283,6 +362,34 @@ export default function SemiFinishedPage() {
             <MetricCard label="Saldo disponível" value={`${dashboardStats.totalSaldo.toFixed(1)} kg`} icon={<Droplet className="h-4 w-4" />} accent="from-emerald-400/40 to-emerald-400/10" />
             <MetricCard label="Famílias" value={dashboardStats.familias} icon={<TrendingUp className="h-4 w-4" />} accent="from-indigo-400/40 to-indigo-400/10" />
           </div>
+          <div className="mt-2 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card className="bg-white/80 border border-sky-100 shadow-md lg:col-span-2">
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-sky-600/80">Assistente de Semi-Acabados</p>
+                    <p className="text-sm text-slate-700">
+                      Use a IA para priorizar envase, analisar riscos de validade e sugerir ações sobre o estoque atual.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={aiBusy}
+                    onClick={handleRunSemiAssistant}
+                    className="text-xs h-8 px-3 bg-gradient-to-r from-sky-500 to-blue-500"
+                  >
+                    {aiBusy ? 'Analisando...' : 'Rodar análise'}
+                  </Button>
+                </div>
+                {aiText && (
+                  <div className="mt-2 rounded-xl border border-slate-100 bg-slate-50/80 p-3 max-h-64 overflow-auto text-xs text-slate-700 whitespace-pre-wrap">
+                    {aiText}
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
         </section>
 
         <section>
@@ -292,11 +399,23 @@ export default function SemiFinishedPage() {
                 <p className="text-[11px] uppercase tracking-[0.3em] text-sky-600/80">Produtos legados</p>
                 <h2 className="text-lg font-semibold text-slate-900">Adicionar item existente</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
                 <LegacyInput id="legacy-name" label="Nome" value={legacyName} onChange={setLegacyName} placeholder="Nome do produto" />
                 <LegacyInput id="legacy-family" label="Família" value={legacyFamily} onChange={setLegacyFamily} placeholder="Linha / família" />
                 <LegacyInput id="legacy-op" label="OP" value={legacyOp} onChange={setLegacyOp} placeholder="OP" />
                 <LegacyInput id="legacy-batch" label="Lote" value={legacyBatch} onChange={setLegacyBatch} placeholder="Lote" />
+                <div className="space-y-1">
+                  <Label htmlFor="legacy-mfg" className="text-xs text-slate-600">
+                    Data fabricação
+                  </Label>
+                  <Input
+                    id="legacy-mfg"
+                    type="date"
+                    value={legacyMfgDate}
+                    onChange={(e) => setLegacyMfgDate(e.target.value)}
+                    className="h-9 text-xs bg-white border border-slate-200 text-slate-900"
+                  />
+                </div>
                 <div className="space-y-1">
                   <Label htmlFor="legacy-qty" className="text-xs text-slate-600">
                     Qtd (kg)
@@ -425,7 +544,6 @@ function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: (
   const { buckets, loading, error } = useSemiFinishedBuckets(product.id)
   const saldo = Number(product.quantity_total) - Number(product.quantity_envasado)
 
-  // Status simplificado baseado nos baldes
   const statusSummary = useMemo(() => {
     if (loading || error || !buckets.length) return { text: 'Carregando...', color: 'text-slate-500' }
 
@@ -447,6 +565,36 @@ function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: (
     return { text: `${total} pendentes`, color: 'text-slate-600' }
   }, [buckets, loading, error])
 
+  const validityInfo = useMemo(() => {
+    if (!product.manufactureDate) return null
+    const mfg = new Date(product.manufactureDate)
+    if (Number.isNaN(mfg.getTime())) return null
+
+    const expiry = new Date(mfg)
+    expiry.setFullYear(expiry.getFullYear() + 2)
+    const today = new Date()
+    const diffDays = Math.round((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+    let label = ''
+    let cls = ''
+
+    if (diffDays <= 0) {
+      label = 'Vencido'
+      cls = 'bg-rose-100 text-rose-800 border-rose-200'
+    } else if (diffDays <= 180) {
+      label = `< 6 meses (${diffDays}d)`
+      cls = 'bg-amber-100 text-amber-800 border-amber-200'
+    } else if (diffDays <= 365) {
+      label = `6-12m (${diffDays}d)`
+      cls = 'bg-emerald-100 text-emerald-800 border-emerald-200'
+    } else {
+      label = `> 12m (${diffDays}d)`
+      cls = 'bg-slate-100 text-slate-700 border-slate-200'
+    }
+
+    return { label, cls }
+  }, [product.manufactureDate])
+
   return (
     <Card className="bg-white border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 ease-out group">
       <div className="p-3">
@@ -461,6 +609,14 @@ function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: (
             <Badge className="bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700 ring-1 ring-slate-200/50 text-xs px-1.5 py-0.5 font-medium">
               {saldo.toFixed(1)}kg
             </Badge>
+            {validityInfo && (
+              <Badge
+                className={`text-[10px] px-1.5 py-0.5 border ${validityInfo.cls}`}
+                title="Estimativa de tempo restante até o vencimento (2 anos após fabricação)"
+              >
+                {validityInfo.label}
+              </Badge>
+            )}
             <div className={`text-xs font-medium ${statusSummary.color} leading-tight`}>
               {statusSummary.text}
             </div>
@@ -593,6 +749,36 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
   const saldo = Number(item.quantity_total) - Number(item.quantity_envasado)
   const soft = getSemiFinishedFamilyColor(item.family)
 
+  const validityInfo = useMemo(() => {
+    if (!item.manufactureDate) return null
+    const mfg = new Date(item.manufactureDate)
+    if (Number.isNaN(mfg.getTime())) return null
+
+    const expiry = new Date(mfg)
+    expiry.setFullYear(expiry.getFullYear() + 2)
+    const today = new Date()
+    const diffDays = Math.round((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+    let label = ''
+    let cls = ''
+
+    if (diffDays <= 0) {
+      label = 'Vencido'
+      cls = 'bg-rose-100 text-rose-800 border-rose-200'
+    } else if (diffDays <= 180) {
+      label = `< 6 meses (${diffDays}d)`
+      cls = 'bg-amber-100 text-amber-800 border-amber-200'
+    } else if (diffDays <= 365) {
+      label = `6-12m (${diffDays}d)`
+      cls = 'bg-emerald-100 text-emerald-800 border-emerald-200'
+    } else {
+      label = `> 12m (${diffDays}d)`
+      cls = 'bg-slate-100 text-slate-700 border-slate-200'
+    }
+
+    return { label, cls }
+  }, [item.manufactureDate])
+
   return (
     <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm bg-white">
       <div className="px-3 py-2" style={{ backgroundColor: soft }}>
@@ -601,7 +787,17 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
             <div className="font-semibold text-slate-800 truncate">{item.name}</div>
             <div className="text-[11px] text-slate-600 truncate">OP: {item.op} • Lote: {item.batch}</div>
           </div>
-          <Badge className="bg-white/70 text-slate-700 ring-1 ring-slate-200">Saldo {saldo.toFixed(1)} kg</Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge className="bg-white/70 text-slate-700 ring-1 ring-slate-200">Saldo {saldo.toFixed(1)} kg</Badge>
+            {validityInfo && (
+              <Badge
+                className={`text-[10px] px-1.5 py-0.5 border ${validityInfo.cls}`}
+                title="Estimativa de tempo restante até o vencimento (2 anos após fabricação)"
+              >
+                {validityInfo.label}
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
       <div className="p-3">

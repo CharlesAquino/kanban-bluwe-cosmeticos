@@ -19,7 +19,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { productId, name, family, op, batch, quantity_total } = body || {}
+    const { productId, name, family, op, batch, quantity_total, manufactureDate } = body || {}
     if (!name || !family || !op || !batch || !quantity_total) {
       return NextResponse.json({ success: false, error: 'Campos obrigatórios ausentes' }, { status: 400 })
     }
@@ -35,13 +35,14 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString()
+    const mfgDate: string | null = manufactureDate || now
     const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
     const semiProductId = productId || `legacy-${op}-${batch}`
     const insert = db.prepare(`
-      INSERT INTO semi_finished_items (id, productId, name, family, op, batch, quantity_total, quantity_envasado, status, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'aguardando', ?, ?)
+      INSERT INTO semi_finished_items (id, productId, name, family, op, batch, quantity_total, quantity_envasado, status, manufactureDate, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'aguardando', ?, ?, ?)
     `)
-    insert.run(id, semiProductId, name, family, op, batch, Number(quantity_total), now, now)
+    insert.run(id, semiProductId, name, family, op, batch, Number(quantity_total), mfgDate, now, now)
 
     const sel = db.prepare('SELECT * FROM semi_finished_items WHERE id = ?')
     const created = sel.get(id)
