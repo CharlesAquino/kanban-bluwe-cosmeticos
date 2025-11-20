@@ -3,7 +3,7 @@
  * Conectado às APIs reais do sistema Kanban
  */
 
-import type { Product, ProductStage, ProductStatus, StageHistory, BottleneckReport } from './types'
+import type { Product, ProductStage, ProductStatus, StageHistory } from './types-modern'
 import { apiFetch } from './api-fetch'
 
 export interface FinalizeProductParams {

@@ -738,7 +738,7 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
                     <div className="mt-1 h-1.5 w-24 rounded-full bg-white/50 overflow-hidden">
                       <div 
                         className="h-full rounded-full bg-black/20 transition-all duration-300" 
-                        style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
+                        style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} /* Style inline necessário: largura calculada dinamicamente */
                       />
                     </div>
                   </button>
