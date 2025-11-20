@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone', // Gera pasta .next/standalone para deploy em Docker
   typescript: {
     ignoreBuildErrors: true,
   },
