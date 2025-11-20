@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: Request) {
   try {
@@ -26,47 +26,24 @@ export async function POST(request: Request) {
       }, { status: 400 })
     }
 
-    const db = getDb()
+    // Criar registro de produção
+    const producao = await prisma.product.create({
+      data: {
+        name: `${produtoCategoria} - ${loteOP}`,
+        op: loteOP,
+        batch: `${produtoCategoria}-${new Date().toISOString().slice(0, 10)}`,
+        quantity: quantidadeKg,
+        currentStage: etapaAtual,
+        status: status === 'EM_ANDAMENTO' ? 'active' : status === 'CONCLUIDO' ? 'completed' : 'paused',
+        notes: observacoes || `Operador: ${operadorId} | Categoria: ${produtoCategoria}`,
+        createdAt: tempoInicio ? new Date(tempoInicio) : new Date(),
+        updatedAt: new Date(),
+        createdById: operadorId,
+        updatedById: operadorId
+      }
+    })
 
-    const id =
-      globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`
-    const now = new Date().toISOString()
-    const createdAtIso = tempoInicio ? new Date(tempoInicio).toISOString() : now
-
-    const statusMapped =
-      status === 'EM_ANDAMENTO'
-        ? 'ACTIVE'
-        : status === 'CONCLUIDO'
-        ? 'COMPLETED'
-        : 'PAUSED'
-
-    const insert = db.prepare(
-      `INSERT INTO products (
-        id, name, family, op, batch, quantity, currentStage, status, createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-
-    insert.run(
-      id,
-      `${produtoCategoria} - ${loteOP}`,
-      produtoCategoria ?? null,
-      loteOP,
-      `${produtoCategoria}-${new Date().toISOString().slice(0, 10)}`,
-      quantidadeKg,
-      etapaAtual,
-      statusMapped,
-      createdAtIso,
-      now
-    )
-
-    const producao = db
-      .prepare(
-        `SELECT id, name, family, op, batch, quantity, currentStage, status, image, createdAt, updatedAt
-         FROM products WHERE id = ?`
-      )
-      .get(id)
-
-    console.log('=== API PRODUÇÃO MANUAL (dev.db): Produção criada ===', id)
+    console.log('=== API PRODUÇÃO MANUAL: Produção criada ===', producao.id)
 
     return NextResponse.json({
       success: true,
@@ -84,19 +61,16 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    console.log('=== API PRODUÇÃO MANUAL (dev.db): Buscando produções ===')
+    console.log('=== API PRODUÇÃO MANUAL: Buscando produções ===')
 
-    const db = getDb()
-    const producoes = db
-      .prepare(
-        `SELECT id, name, family, op, batch, quantity, currentStage, status, image, createdAt, updatedAt
-         FROM products
-         ORDER BY datetime(createdAt) DESC
-         LIMIT 50`
-      )
-      .all()
+    const producoes = await prisma.product.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 50 // Limitar para performance
+    })
 
-    console.log('=== API PRODUÇÃO MANUAL (dev.db): Produções encontradas ===', producoes.length)
+    console.log('=== API PRODUÇÃO MANUAL: Produções encontradas ===', producoes.length)
 
     return NextResponse.json({
       success: true,

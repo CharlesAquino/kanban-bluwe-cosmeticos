@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,13 +15,10 @@ export async function GET(
     console.log('=== API GET: Buscando produto ===')
     console.log('Produto ID:', id)
 
-    const db = getDb()
-    const product = db
-      .prepare(
-        `SELECT id, name, family, op, batch, quantity, currentStage, status, image, createdAt, updatedAt
-         FROM products WHERE id = ?`
-      )
-      .get(id)
+    // Buscar produto com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
     if (!product) {
       return NextResponse.json({
@@ -60,13 +57,10 @@ export async function PUT(
     console.log('=== API PUT: Atualizando produto ===')
     console.log('Dados recebidos:', { id, name, op, batch, quantity, image })
 
-    const db = getDb()
-    const product = db
-      .prepare(
-        `SELECT id, name, family, op, batch, quantity, currentStage, status, image, createdAt, updatedAt
-         FROM products WHERE id = ?`
-      )
-      .get(id)
+    // Buscar produto atual com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
     if (!product) {
       return NextResponse.json({
@@ -74,27 +68,19 @@ export async function PUT(
         error: 'Produto não encontrado'
       }, { status: 404 })
     }
-    const now = new Date().toISOString()
-    const update = db.prepare(
-      `UPDATE products
-       SET name = ?, op = ?, batch = ?, quantity = ?, image = ?, updatedAt = ?
-       WHERE id = ?`
-    )
 
-    const newName = name !== undefined ? String(name).trim() : product.name
-    const newOp = op !== undefined ? String(op).trim() : product.op
-    const newBatch = batch !== undefined ? String(batch).trim() : product.batch
-    const newQty = quantity !== undefined ? Number(quantity) : product.quantity
-    const newImage = image !== undefined ? (String(image).trim() || null) : product.image
-
-    update.run(newName, newOp, newBatch, newQty, newImage, now, id)
-
-    const updatedProduct = db
-      .prepare(
-        `SELECT id, name, family, op, batch, quantity, currentStage, status, image, createdAt, updatedAt
-         FROM products WHERE id = ?`
-      )
-      .get(id)
+    // Atualizar produto com Prisma
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        name: name !== undefined ? String(name).trim() : product.name,
+        op: op !== undefined ? String(op).trim() : product.op,
+        batch: batch !== undefined ? String(batch).trim() : product.batch,
+        quantity: quantity !== undefined ? Number(quantity) : product.quantity,
+        image: image !== undefined ? (String(image).trim() || null) : product.image,
+        updatedAt: new Date()
+      }
+    })
 
     console.log('Produto atualizado:', updatedProduct)
 
@@ -124,13 +110,10 @@ export async function DELETE(
     console.log('=== API DELETE: Deletando produto ===')
     console.log('Produto ID:', id)
 
-    const db = getDb()
-    const product = db
-      .prepare(
-        `SELECT id, name, family, op, batch, quantity, currentStage, status, image, createdAt, updatedAt
-         FROM products WHERE id = ?`
-      )
-      .get(id)
+    // Verificar se produto existe com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
     if (!product) {
       return NextResponse.json({
@@ -139,7 +122,10 @@ export async function DELETE(
       }, { status: 404 })
     }
 
-    db.prepare('DELETE FROM products WHERE id = ?').run(id)
+    // Deletar produto com Prisma
+    await prisma.product.delete({
+      where: { id }
+    })
 
     console.log('Produto deletado:', product)
 
@@ -172,44 +158,27 @@ export async function PATCH(
     console.log('=== API PATCH: Atualizando status do produto ===')
     console.log('Dados recebidos:', { id, status, currentStage })
 
-    const db = getDb()
-    const existing = db
-      .prepare(
-        `SELECT id, name, family, op, batch, quantity, currentStage, status, image, createdAt, updatedAt
-         FROM products WHERE id = ?`
-      )
-      .get(id) as
-      | {
-          id: string
-          currentStage: string
-          status: string
-        }
-      | undefined
+    // Buscar produto atual com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
-    if (!existing) {
-      return NextResponse.json(
-        { success: false, error: 'Produto não encontrado' },
-        { status: 404 }
-      )
+    if (!product) {
+      return NextResponse.json({
+        success: false,
+        error: 'Produto não encontrado'
+      }, { status: 404 })
     }
 
-    const now = new Date().toISOString()
-    const newStatus = status !== undefined ? String(status).toUpperCase() : existing.status
-    const newStage =
-      currentStage !== undefined ? String(currentStage).toUpperCase() : existing.currentStage
-
-    db.prepare(
-      `UPDATE products
-       SET status = ?, currentStage = ?, updatedAt = ?
-       WHERE id = ?`
-    ).run(newStatus, newStage, now, id)
-
-    const updatedProduct = db
-      .prepare(
-        `SELECT id, name, family, op, batch, quantity, currentStage, status, image, createdAt, updatedAt
-         FROM products WHERE id = ?`
-      )
-      .get(id)
+    // Atualizar status do produto com Prisma
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        status: status !== undefined ? String(status).toUpperCase() : product.status,
+        currentStage: currentStage !== undefined ? String(currentStage).toUpperCase() : product.currentStage,
+        updatedAt: new Date()
+      }
+    })
 
     console.log('Status do produto atualizado:', updatedProduct)
 

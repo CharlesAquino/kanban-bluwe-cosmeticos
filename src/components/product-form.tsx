@@ -79,6 +79,12 @@ export function ProductForm({ onProductCreated }: ProductFormProps) {
       return;
     }
 
+    const mod = parseInt(formData.image);
+    if (isNaN(mod) || mod < 1 || mod > 10) {
+      showToast('MOD deve ser um número entre 1 e 10', 'error');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {

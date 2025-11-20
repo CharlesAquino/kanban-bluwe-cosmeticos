@@ -1,17 +1,40 @@
 /**
- * Serviço centralizado para operações de produto
+ * Serviço centralizado para operações de produto - Versão Mock para GitHub Pages
  * Aplicando princípios de clean code:
  * - Single Responsibility: Cada função faz uma coisa específica
- * - DRY: Eliminação de código duplicado
- * - Error Handling: Tratamento consistente de erros
+ * - Mock Data: Dados simulados para funcionamento sem APIs
  * - Type Safety: Tipagem adequada
- * - Monitoring: Integração automática com monitoramento de processos
  */
 
-import type { Product, ProductStage } from './types'
-import { broadcastChange } from './bus'
-import { apiFetch } from './api-fetch'
+import type { Product, ProductStage, ProductStatus, StageHistory, BottleneckReport } from './types'
+// Mock broadcast change para GitHub Pages
+function broadcastChange(event: { type: string; action: string }) {
+  console.log('📢 BroadcastChange (Mock):', event)
+}
 import { mutate } from 'swr'
+
+// Mock helper para GitHub Pages (sem APIs)
+function createMockResult<T>(data: T, success = true): { success: boolean; data?: T; error?: string } {
+  return { success, data, error: success ? undefined : 'Erro simulado' }
+}
+
+function createMockProduct(overrides: Partial<Product> = {}): Product {
+  return {
+    id: Date.now().toString(),
+    name: 'Produto Mock',
+    op: 'OP001',
+    batch: 'B001',
+    quantity: 1000,
+    currentStage: 'BACKLOG',
+    status: 'ACTIVE',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    stageHistory: [],
+    hourlyControls: [],
+    bottleneckReports: [],
+    ...overrides
+  }
+}
 
 export interface ProductOperationResult {
   success: boolean
@@ -21,263 +44,120 @@ export interface ProductOperationResult {
 }
 
 /**
- * Finaliza produto (envia para Semi-Acabados)
+ * Finaliza produto (envia para Semi-Acabados) - Mock
  */
 export async function finalizeProduct(productId: string): Promise<ProductOperationResult> {
   try {
-    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
-      `/api/products/${productId}/finalize`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' } }
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
-
+    console.log('🔄 finalizeProduct: Mock operation para GitHub Pages')
+    
+    const mockProduct = createMockProduct({
+      id: productId,
+      currentStage: 'APROVADO',
+      status: 'COMPLETED'
+    })
+    
     broadcastChange({ type: 'semi_finished', action: 'create' })
-    broadcastChange({ type: 'products', action: 'delete' })
-    
-    // Revalidação agressiva das listas
-    try {
-      // Limpa completamente o cache
-      mutate('/api/products', undefined, { revalidate: true })
-      mutate('/api/semi-finished', undefined, { revalidate: true })
-      
-      // Força múltiplas atualizações para garantir sincronia
-      await Promise.all([
-        fetch('/api/products', { cache: 'no-store' }),
-        fetch('/api/semi-finished', { cache: 'no-store' })
-      ])
-      
-      // Invalida novamente após as chamadas
-      setTimeout(() => {
-        mutate('/api/products', undefined, { revalidate: true })
-      }, 100)
-    } catch (error) {
-      console.warn('Erro ao revalidar cache:', error)
-    }
-    
-    return { success: true, data: data.data }
+    mutate('/api/products')
+    mutate('/api/semi-finished')
+
+    return { success: true, data: mockProduct }
   } catch (error) {
     console.error('Erro ao finalizar produto:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor',
-    }
-  }
-}
-
-export interface AdvanceStageParams {
-  productId: string
-  nextStage: ProductStage
-  mod: number
-}
-
-export interface BlockProductionParams {
-  productId: string
-  reason: string
-}
-
-// Callback para monitoramento de processos
-type ProcessMonitorCallback = (event: {
-  productId: string
-  productName: string
-  action: string
-  fromStage?: ProductStage
-  toStage?: ProductStage
-  metadata?: Record<string, unknown>
-}) => void
-
-let processMonitorCallback: ProcessMonitorCallback | null = null
-
-/**
- * Define callback para monitoramento de processos
- */
-export function setProcessMonitorCallback(callback: ProcessMonitorCallback) {
-  processMonitorCallback = callback
-}
-
-/**
- * Notifica o sistema de monitoramento sobre ações realizadas
- */
-function notifyProcessMonitor(event: {
-  productId: string
-  productName: string
-  action: string
-  fromStage?: ProductStage
-  toStage?: ProductStage
-  metadata?: Record<string, unknown>
-}) {
-  if (processMonitorCallback) {
-    processMonitorCallback(event)
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 }
 
 /**
- * Avança produto para próximo estágio
+ * Avança produto para próximo estágio - Mock
  */
-export async function advanceProductStage(params: AdvanceStageParams): Promise<ProductOperationResult> {
+export async function advanceStage(productId: string): Promise<ProductOperationResult> {
   try {
-    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
-      `/api/products/${params.productId}/advance`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nextStage: params.nextStage, mod: params.mod })
-      }
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
+    console.log('🔄 advanceStage: Mock operation para GitHub Pages')
+    
+    const mockProduct = createMockProduct({
+      id: productId,
+      currentStage: 'PRODUCAO_1KG',
+      status: 'ACTIVE'
+    })
+    
+    broadcastChange({ type: 'product', action: 'update' })
+    mutate('/api/products')
 
-    // Notificar monitoramento sobre avanço de estágio
-    if (data.data) {
-      notifyProcessMonitor({
-        productId: params.productId,
-        productName: data.data.name,
-        action: 'stage_advance',
-        fromStage: data.data.currentStage, // Estágio anterior
-        toStage: params.nextStage,
-        metadata: {
-          mod: params.mod,
-          timestamp: new Date().toISOString()
-        }
-      })
-      broadcastChange({ type: 'products', action: 'advance' })
-    }
-
-    return { success: true, data: data.data }
+    return { success: true, data: mockProduct }
   } catch (error) {
     console.error('Erro ao avançar estágio:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor'
-    }
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 }
 
 /**
- * Pausa produção de produto
+ * Pausa produto - Mock
  */
-export async function pauseProduct(productId: string): Promise<ProductOperationResult> {
+export async function pauseProduct(productId: string, reason?: string): Promise<ProductOperationResult> {
   try {
-    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
-      `/api/products/${productId}/pause`,
-      { method: 'POST' }
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
+    console.log('🔄 pauseProduct: Mock operation para GitHub Pages')
+    
+    const mockProduct = createMockProduct({
+      id: productId,
+      status: 'PAUSED'
+    })
+    
+    broadcastChange({ type: 'product', action: 'pause' })
+    mutate('/api/products')
 
-    // Notificar monitoramento sobre pausa
-    if (data.data) {
-      notifyProcessMonitor({
-        productId,
-        productName: data.data.name,
-        action: 'stage_pause',
-        metadata: {
-          timestamp: new Date().toISOString()
-        }
-      })
-      broadcastChange({ type: 'products', action: 'pause' })
-    }
-
-    return { success: true, data: data.data }
+    return { success: true, data: mockProduct }
   } catch (error) {
-    console.error('Erro ao pausar produção:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor'
-    }
+    console.error('Erro ao pausar produto:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 }
 
 /**
- * Retoma produção de produto
+ * Retoma produto - Mock
  */
 export async function resumeProduct(productId: string): Promise<ProductOperationResult> {
   try {
-    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
-      `/api/products/${productId}/resume`,
-      { method: 'POST' }
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
+    console.log('🔄 resumeProduct: Mock operation para GitHub Pages')
+    
+    const mockProduct = createMockProduct({
+      id: productId,
+      status: 'ACTIVE'
+    })
+    
+    broadcastChange({ type: 'product', action: 'resume' })
+    mutate('/api/products')
 
-    // Notificar monitoramento sobre retomada
-    if (data.data) {
-      notifyProcessMonitor({
-        productId,
-        productName: data.data.name,
-        action: 'stage_resume',
-        metadata: {
-          timestamp: new Date().toISOString()
-        }
-      })
-      broadcastChange({ type: 'products', action: 'resume' })
-    }
-
-    return { success: true, data: data.data }
+    return { success: true, data: mockProduct }
   } catch (error) {
-    console.error('Erro ao retomar produção:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor'
-    }
+    console.error('Erro ao retomar produto:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 }
 
 /**
- * Bloqueia produção de produto
+ * Bloqueia produto - Mock
  */
-export async function blockProduct(params: BlockProductionParams): Promise<ProductOperationResult> {
+export async function blockProduct(productId: string, reason: string): Promise<ProductOperationResult> {
   try {
-    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
-      `/api/products/${params.productId}/block`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: params.reason }) }
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
+    console.log('🔄 blockProduct: Mock operation para GitHub Pages')
+    
+    const mockProduct = createMockProduct({
+      id: productId,
+      status: 'BLOCKED'
+    })
+    
+    broadcastChange({ type: 'product', action: 'block' })
+    mutate('/api/products')
 
-    // Notificar monitoramento sobre bloqueio
-    if (data.data) {
-      notifyProcessMonitor({
-        productId: params.productId,
-        productName: data.data.name,
-        action: 'stage_block',
-        metadata: {
-          reason: params.reason,
-          timestamp: new Date().toISOString()
-        }
-      })
-      broadcastChange({ type: 'products', action: 'block' })
-    }
-
-    return { success: true, data: data.data }
+    return { success: true, data: mockProduct }
   } catch (error) {
-    console.error('Erro ao bloquear produção:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor'
-    }
+    console.error('Erro ao bloquear produto:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 }
 
 /**
- * Remove produto do sistema
- */
-export async function deleteProduct(productId: string): Promise<ProductOperationResult> {
-  try {
-    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
-      `/api/products/${productId}`,
-      { method: 'DELETE' }
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
-
-    return { success: true, data: data.data }
-  } catch (error) {
-    console.error('Erro ao deletar produto:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor'
-    }
-  }
-}
-
-/**
- * Carrega produtos e estatísticas do servidor
- * Versão ultra-simplificada para garantir funcionamento
+ * Carrega produtos e estatísticas - Mock
  */
 export async function loadProductsAndStats(): Promise<{
   products: Product[]
@@ -289,24 +169,39 @@ export async function loadProductsAndStats(): Promise<{
     blocked: number
   }
 }> {
-  console.log('🚀 LOADING DATA: Carregando produtos da API')
+  console.log('🚀 LOADING DATA: Usando dados mock (GitHub Pages)')
 
-  const json = await apiFetch<{ success: boolean; data: Product[]; error?: string }>('/api/products', { cache: 'no-store' })
-  if (!json.success) throw new Error(json.error || 'Falha ao carregar produtos')
-  const products = json.data || []
-
-  // Buscar também itens de Semi-Acabados para compor o total de concluídos
-  let semiFinishedCount = 0
-  try {
-    const semiJson = await apiFetch<{ success: boolean; data: unknown[]; error?: string }>('/api/semi-finished', {
-      cache: 'no-store',
+  const products: Product[] = [
+    createMockProduct({
+      id: '1',
+      name: 'Produto Mock 1',
+      op: 'OP001',
+      batch: 'B001',
+      quantity: 1000,
+      currentStage: 'BACKLOG',
+      status: 'ACTIVE'
+    }),
+    createMockProduct({
+      id: '2',
+      name: 'Produto Mock 2',
+      op: 'OP002',
+      batch: 'B002',
+      quantity: 1500,
+      currentStage: 'PRODUCAO_1KG',
+      status: 'PAUSED'
+    }),
+    createMockProduct({
+      id: '3',
+      name: 'Produto Mock 3',
+      op: 'OP003',
+      batch: 'B003',
+      quantity: 2000,
+      currentStage: 'APROVADO',
+      status: 'COMPLETED'
     })
-    if (semiJson.success && Array.isArray(semiJson.data)) {
-      semiFinishedCount = semiJson.data.length
-    }
-  } catch (e) {
-    console.warn('Falha ao carregar semi-acabados para stats, usando 0:', e)
-  }
+  ]
+
+  const semiFinishedCount = 2
 
   const inProgress = products.filter((p) => String(p.status).toUpperCase() === 'ACTIVE').length
   const paused = products.filter((p) => String(p.status).toUpperCase() === 'PAUSED').length
@@ -319,175 +214,32 @@ export async function loadProductsAndStats(): Promise<{
     inProgress,
     paused,
     completed,
-    blocked,
+    blocked
   }
 
   return { products, stats }
 }
 
 /**
- * Cria novo produto no sistema
+ * Avança estágio do produto (alias) - Mock
  */
-export async function createProduct(productData: {
-  name: string
-  op: string
-  batch: string
-  quantity: number
-}): Promise<ProductOperationResult> {
-  try {
-    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
-      '/api/products',
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(productData) }
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
-
-    // Notificar monitoramento sobre criação de produto
-    if (data.data) {
-      notifyProcessMonitor({
-        productId: data.data.id,
-        productName: data.data.name,
-        action: 'product_create',
-        metadata: {
-          op: data.data.op,
-          batch: data.data.batch,
-          quantity: data.data.quantity,
-          timestamp: new Date().toISOString()
-        }
-      })
-      broadcastChange({ type: 'products', action: 'create' })
-    }
-
-    return { success: true, data: data.data }
-  } catch (error) {
-    console.error('Erro ao criar produto:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor'
-    }
-  }
-}
-
-export interface DetailedAdvanceStageParams extends AdvanceStageParams {
-  operator?: string
-  shift?: 'morning' | 'afternoon' | 'night'
-  notes?: string
-  targetDuration?: number // Duração esperada em minutos
-}
-
-export interface BottleneckReportData {
-  productId: string
-  stage: ProductStage
-  waitingTime: number
-  stageDuration: number
-  bottleneckScore: number
-  recommendations?: string
+export async function advanceProductStage(productId: string): Promise<ProductOperationResult> {
+  return advanceStage(productId)
 }
 
 /**
- * Avança produto para próximo estágio com controle detalhado
+ * Deleta produto - Mock
  */
-export async function advanceProductStageDetailed(params: DetailedAdvanceStageParams): Promise<ProductOperationResult> {
+export async function deleteProduct(productId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
-      `/api/products/${params.productId}/advance-detailed`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nextStage: params.nextStage,
-          mod: params.mod,
-          operator: params.operator,
-          shift: params.shift,
-          notes: params.notes,
-          targetDuration: params.targetDuration
-        })
-      }
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
+    console.log('🗑️ deleteProduct: Mock operation para GitHub Pages')
+    
+    broadcastChange({ type: 'product', action: 'delete' })
+    mutate('/api/products')
 
-    return { success: true, data: data.data }
+    return { success: true }
   } catch (error) {
-    console.error('Erro ao avançar estágio detalhado:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor'
-    }
-  }
-}
-
-/**
- * Registra controle hora a hora para um produto
- */
-export async function registerHourlyControl(params: {
-  productId: string
-  productName: string
-  date: string
-  shift: 'morning' | 'afternoon' | 'night'
-  operator: string
-  targetQuantity: number
-  actualQuantity: number
-  efficiency: number
-  status: 'on_track' | 'behind' | 'ahead' | 'completed'
-  notes?: string
-  stage: ProductStage
-}): Promise<ProductOperationResult> {
-  try {
-    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
-      '/api/hourly-control',
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) }
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
-
-    return { success: true, data: data.data }
-  } catch (error) {
-    console.error('Erro ao registrar controle hora a hora:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor'
-    }
-  }
-}
-
-/**
- * Gera relatório de gargalos baseado no histórico de estágios
- */
-export async function generateBottleneckReport(productId: string): Promise<ProductOperationResult> {
-  try {
-    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
-      `/api/reports/bottlenecks/${productId}`,
-      { method: 'POST' }
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro', details: data.details }
-
-    return { success: true, data: data.data }
-  } catch (error) {
-    console.error('Erro ao gerar relatório de gargalos:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor'
-    }
-  }
-}
-
-/**
- * Obtém relatório geral de gargalos do sistema
- */
-export async function getBottleneckReports(): Promise<{
-  success: boolean
-  data?: BottleneckReportData[]
-  error?: string
-}> {
-  try {
-    const data = await apiFetch<{ success: boolean; data?: BottleneckReportData[]; error?: string }>(
-      '/api/reports/bottlenecks'
-    )
-    if (!data.success) return { success: false, error: data.error || 'Erro' }
-    return { success: true, data: data.data }
-  } catch (error) {
-    console.error('Erro ao obter relatórios de gargalos:', error)
-    return {
-      success: false,
-      error: 'Erro interno do servidor'
-    }
+    console.error('Erro ao deletar produto:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
   }
 }

@@ -7,12 +7,39 @@ import ClientGlobalProvider from '@/components/client-global-provider'
 import GlobalStatusBanner from '@/components/global-status-banner'
 import { Shield } from 'lucide-react'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/auth-context'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const { isAuthenticated, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/admin/login')
+    }
+  }, [isAuthenticated, loading, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="h-12 w-12 text-indigo-600 mx-auto mb-4 animate-pulse" />
+          <p className="text-slate-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header Admin */}

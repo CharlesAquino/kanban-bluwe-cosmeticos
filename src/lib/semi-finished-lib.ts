@@ -10,7 +10,6 @@ export type SemiItem = {
   quantity_total: number
   quantity_envasado: number
   status: string
-  manufactureDate?: string
 }
 
 export type Bucket = {
@@ -23,24 +22,72 @@ export type Bucket = {
 }
 
 export const semiFinishedFetcher = async (url: string) => {
-  const res = await fetch(url, { cache: 'no-store' })
-  const json = await res.json()
-  if (!res.ok || !json?.success) throw new Error(json?.error || `Erro ${res.status}`)
-  return json.data
+  console.log('📦 semiFinishedFetcher: Mock data para GitHub Pages')
+  
+  // Mock data para semi-acabados
+  const mockData: SemiItem[] = [
+    {
+      id: '1',
+      productId: '1',
+      name: 'Semi-Acabado Mock 1',
+      family: 'Família A',
+      op: 'OP001',
+      batch: 'B001',
+      quantity_total: 1000,
+      quantity_envasado: 500,
+      status: 'parcial'
+    },
+    {
+      id: '2',
+      productId: '2',
+      name: 'Semi-Acabado Mock 2',
+      family: 'Família B',
+      op: 'OP002',
+      batch: 'B002',
+      quantity_total: 1500,
+      quantity_envasado: 750,
+      status: 'completo'
+    },
+    {
+      id: '3',
+      productId: '3',
+      name: 'Semi-Acabado Mock 3',
+      family: 'Família A',
+      op: 'OP003',
+      batch: 'B003',
+      quantity_total: 800,
+      quantity_envasado: 0,
+      status: 'aguardando'
+    }
+  ]
+  
+  return mockData
 }
 
 export function useSemiFinishedBuckets(itemId: string) {
-  const { data, isLoading, error, mutate } = useSWR<Bucket[]>(
-    `/api/semi-finished/${itemId}/buckets`,
-    semiFinishedFetcher,
+  console.log('🪣 useSemiFinishedBuckets: Mock data para GitHub Pages')
+  
+  // Mock buckets data
+  const mockBuckets: Bucket[] = [
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      refreshInterval: 15000,
-      keepPreviousData: true,
+      id: 'b1',
+      semiFinishedId: itemId,
+      bucketIndex: 1,
+      originalQuantityKg: 18,
+      currentQuantityKg: 18,
+      status: 'cheio'
+    },
+    {
+      id: 'b2',
+      semiFinishedId: itemId,
+      bucketIndex: 2,
+      originalQuantityKg: 18,
+      currentQuantityKg: 15,
+      status: 'parcial'
     }
-  )
-  return { buckets: data || [], loading: isLoading, error, mutate }
+  ]
+
+  return { data: mockBuckets, isLoading: false, error: null, mutate: async () => {} }
 }
 
 export function getSemiFinishedFamilyColor(family: string) {

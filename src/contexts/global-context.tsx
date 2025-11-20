@@ -8,7 +8,6 @@
 'use client'
 
 import { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
-import { usePathname } from 'next/navigation'
 import type { Product, HourlyControl, ProductStage, ProductStatus } from '@/lib/types-modern'
 
 // Tipos necessários
@@ -148,7 +147,6 @@ const GlobalContext = createContext<{
 // Provider otimizado
 export function GlobalProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(globalReducer, initialState)
-  const pathname = usePathname()
 
   // Carregar dados - integrado às APIs reais
   const loadAllData = useCallback(async () => {
@@ -167,24 +165,50 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_LOADING', payload: false })
       }, 12000)
 
-      // Buscar produtos reais
-      const productsRes = await fetch('/api/products', { cache: 'no-store' })
-      if (!productsRes.ok) throw new Error(`Falha ao buscar produtos: ${productsRes.status}`)
-      const productsJson = await productsRes.json()
-      const products = (productsJson?.data ?? []) as Product[]
+      // Usar dados mock para GitHub Pages
+      const products: Product[] = [
+        {
+          id: '1',
+          name: 'Produto Mock 1',
+          op: 'OP001',
+          batch: 'B001',
+          quantity: 1000,
+          currentStage: 'BACKLOG',
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          stageHistory: [],
+          hourlyControls: [],
+        },
+        {
+          id: '2',
+          name: 'Produto Mock 2',
+          op: 'OP002',
+          batch: 'B002',
+          quantity: 1500,
+          currentStage: 'PRODUCAO_1KG',
+          status: 'PAUSED',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          stageHistory: [],
+          hourlyControls: [],
+        }
+      ]
       dispatch({ type: 'SET_PRODUCTS', payload: products })
 
-      // Buscar estatísticas reais
-      const statsRes = await fetch('/api/stats', { cache: 'no-store' })
-      if (!statsRes.ok) throw new Error(`Falha ao buscar estatísticas: ${statsRes.status}`)
-      const statsJson = await statsRes.json()
-      const stats = (statsJson?.data ?? {
-        total: 0,
-        inProgress: 0,
-        paused: 0,
-        completed: 0,
-        blocked: 0
-      }) as GlobalState['stats']
+      // Estatísticas mock
+      const inProgress = products.filter((p) => String(p.status).toUpperCase() === 'ACTIVE').length
+      const paused = products.filter((p) => String(p.status).toUpperCase() === 'PAUSED').length
+      const blocked = products.filter((p) => String(p.status).toUpperCase() === 'BLOCKED').length
+      const completed = products.filter((p) => String(p.status).toUpperCase() === 'COMPLETED').length
+      
+      const stats = {
+        total: products.length,
+        inProgress,
+        paused,
+        completed,
+        blocked
+      } as GlobalState['stats']
       dispatch({ type: 'SET_STATS', payload: stats })
 
       // Dados de monitoramento (placeholder vazio até termos API)
@@ -223,15 +247,9 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
 
   // Carregar dados iniciais - apenas uma vez - CORRIGIDO
   useEffect(() => {
-    // Evitar carregamento global na tela de login admin
-    if (pathname === '/admin/login') {
-      console.log('🚀 GlobalProvider ativo, mas ignorando carregamento global em /admin/login')
-      return
-    }
-
     console.log('🚀 Inicializando contexto global...')
     loadAllData()
-  }, [loadAllData, pathname]) // ✅ Dependências corretas
+  }, [loadAllData]) // ✅ Dependência correta - loadAllData está memoizado
 
   // Auto-refresh se habilitado - versão segura - CORRIGIDO
   useEffect(() => {

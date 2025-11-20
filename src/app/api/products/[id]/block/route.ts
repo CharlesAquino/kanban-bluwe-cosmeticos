@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(
   request: NextRequest,
@@ -20,9 +20,10 @@ export async function POST(
       }, { status: 400 })
     }
 
-    // Buscar produto atual com better-sqlite3
-    const db = getDb()
-    const product = db.prepare('SELECT * FROM products WHERE id = ?').get(id) as any
+    // Buscar produto atual com Prisma
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
 
     if (!product) {
       return NextResponse.json({
@@ -31,18 +32,14 @@ export async function POST(
       }, { status: 404 })
     }
 
-    // Atualizar status para bloqueado com better-sqlite3
-    const updatedAt = new Date().toISOString()
-    const stmt = db.prepare(`
-      UPDATE products 
-      SET status = 'BLOCKED', updatedAt = ? 
-      WHERE id = ?
-    `)
-    
-    stmt.run(updatedAt, id)
-    
-    // Buscar produto atualizado
-    const updatedProduct = db.prepare('SELECT * FROM products WHERE id = ?').get(id) as any
+    // Atualizar status para bloqueado com Prisma
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: {
+        status: 'BLOCKED',
+        updatedAt: new Date()
+      }
+    })
 
     console.log('Produto bloqueado:', updatedProduct)
 

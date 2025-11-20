@@ -17,7 +17,7 @@ import {
 const adminTabs = [
   { href: "/admin", label: "Admin Home", icon: Shield },
   { href: "/admin/quality", label: "Qualidade Admin", icon: Beaker },
-  { href: "/cms/mod", label: "MOD Admin", icon: Users },
+  { href: "/admin/mod", label: "MOD Admin", icon: Users },
   { href: "/semi-finished", label: "Semi-acabados Admin", icon: Package },
 ]
 
