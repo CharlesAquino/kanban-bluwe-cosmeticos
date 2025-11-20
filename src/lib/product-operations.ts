@@ -196,6 +196,11 @@ export async function loadProducts(): Promise<{ products: Product[]; stats: any 
 export { advanceProductStage as advanceStage }
 
 /**
+ * Carrega produtos e estatísticas (alias para compatibilidade)
+ */
+export { loadProducts as loadProductsAndStats }
+
+/**
  * Deleta produto
  */
 export async function deleteProduct(productId: string): Promise<ProductOperationResult> {
