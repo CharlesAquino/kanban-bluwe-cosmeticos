@@ -1,39 +1,20 @@
 /**
- * Serviço centralizado para operações de produto - Versão Mock para GitHub Pages
- * Aplicando princípios de clean code:
- * - Single Responsibility: Cada função faz uma coisa específica
- * - Mock Data: Dados simulados para funcionamento sem APIs
- * - Type Safety: Tipagem adequada
+ * Serviço centralizado para operações de produto
+ * Conectado às APIs reais do sistema Kanban
  */
 
 import type { Product, ProductStage, ProductStatus, StageHistory, BottleneckReport } from './types'
-// Mock broadcast change para GitHub Pages
-function broadcastChange(event: { type: string; action: string }) {
-  console.log('📢 BroadcastChange (Mock):', event)
-}
-import { mutate } from 'swr'
+import { apiFetch } from './api-fetch'
 
-// Mock helper para GitHub Pages (sem APIs)
-function createMockResult<T>(data: T, success = true): { success: boolean; data?: T; error?: string } {
-  return { success, data, error: success ? undefined : 'Erro simulado' }
+export interface FinalizeProductParams {
+  productId: string
+  mod?: string
 }
 
-function createMockProduct(overrides: Partial<Product> = {}): Product {
-  return {
-    id: Date.now().toString(),
-    name: 'Produto Mock',
-    op: 'OP001',
-    batch: 'B001',
-    quantity: 1000,
-    currentStage: 'BACKLOG',
-    status: 'ACTIVE',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    stageHistory: [],
-    hourlyControls: [],
-    bottleneckReports: [],
-    ...overrides
-  }
+export interface AdvanceStageParams {
+  productId: string
+  nextStage: ProductStage
+  mod?: string
 }
 
 export interface ProductOperationResult {
@@ -44,202 +25,221 @@ export interface ProductOperationResult {
 }
 
 /**
- * Finaliza produto (envia para Semi-Acabados) - Mock
+ * Finaliza produto (envia para Semi-Acabados)
  */
-export async function finalizeProduct(productId: string): Promise<ProductOperationResult> {
+export async function finalizeProduct(params: FinalizeProductParams): Promise<ProductOperationResult> {
   try {
-    console.log('🔄 finalizeProduct: Mock operation para GitHub Pages')
+    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
+      `/api/products/${params.productId}/finalize`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mod: params.mod })
+      }
+    )
     
-    const mockProduct = createMockProduct({
-      id: productId,
-      currentStage: 'APROVADO',
-      status: 'COMPLETED'
-    })
-    
-    broadcastChange({ type: 'semi_finished', action: 'create' })
-    mutate('/api/products')
-    mutate('/api/semi-finished')
+    if (!data.success) {
+      return { success: false, error: data.error || 'Erro ao finalizar produto', details: data.details }
+    }
 
-    return { success: true, data: mockProduct }
+    return { success: true, data: data.data }
   } catch (error) {
-    console.error('Erro ao finalizar produto:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+    console.error('❌ finalizeProduct error:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao finalizar produto' 
+    }
   }
 }
 
 /**
- * Avança produto para próximo estágio - Mock
+ * Avança produto para próximo estágio
  */
-export async function advanceStage(productId: string): Promise<ProductOperationResult> {
+export async function advanceProductStage(params: AdvanceStageParams): Promise<ProductOperationResult> {
   try {
-    console.log('🔄 advanceStage: Mock operation para GitHub Pages')
+    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
+      `/api/products/${params.productId}/advance`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nextStage: params.nextStage, mod: params.mod })
+      }
+    )
     
-    const mockProduct = createMockProduct({
-      id: productId,
-      currentStage: 'PRODUCAO_1KG',
-      status: 'ACTIVE'
-    })
-    
-    broadcastChange({ type: 'product', action: 'update' })
-    mutate('/api/products')
+    if (!data.success) {
+      return { success: false, error: data.error || 'Erro ao avançar estágio', details: data.details }
+    }
 
-    return { success: true, data: mockProduct }
+    // Notificar monitoramento sobre avanço de estágio
+    if (data.data) {
+      notifyProcessMonitor({
+        productId: params.productId,
+        productName: data.data.name,
+        action: 'stage_advance',
+        fromStage: data.data.currentStage,
+        toStage: params.nextStage,
+        timestamp: new Date().toISOString()
+      })
+    }
+
+    return { success: true, data: data.data }
   } catch (error) {
-    console.error('Erro ao avançar estágio:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+    console.error('❌ advanceProductStage error:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao avançar estágio' 
+    }
   }
 }
 
 /**
- * Pausa produto - Mock
+ * Pausa produto
  */
-export async function pauseProduct(productId: string, reason?: string): Promise<ProductOperationResult> {
+export async function pauseProduct(productId: string): Promise<ProductOperationResult> {
   try {
-    console.log('🔄 pauseProduct: Mock operation para GitHub Pages')
+    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
+      `/api/products/${productId}/pause`,
+      { method: 'POST' }
+    )
     
-    const mockProduct = createMockProduct({
-      id: productId,
-      status: 'PAUSED'
-    })
-    
-    broadcastChange({ type: 'product', action: 'pause' })
-    mutate('/api/products')
+    if (!data.success) {
+      return { success: false, error: data.error || 'Erro ao pausar produto', details: data.details }
+    }
 
-    return { success: true, data: mockProduct }
+    return { success: true, data: data.data }
   } catch (error) {
-    console.error('Erro ao pausar produto:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+    console.error('❌ pauseProduct error:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao pausar produto' 
+    }
   }
 }
 
 /**
- * Retoma produto - Mock
+ * Retoma produto
  */
 export async function resumeProduct(productId: string): Promise<ProductOperationResult> {
   try {
-    console.log('🔄 resumeProduct: Mock operation para GitHub Pages')
+    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
+      `/api/products/${productId}/resume`,
+      { method: 'POST' }
+    )
     
-    const mockProduct = createMockProduct({
-      id: productId,
-      status: 'ACTIVE'
-    })
-    
-    broadcastChange({ type: 'product', action: 'resume' })
-    mutate('/api/products')
+    if (!data.success) {
+      return { success: false, error: data.error || 'Erro ao retomar produto', details: data.details }
+    }
 
-    return { success: true, data: mockProduct }
+    return { success: true, data: data.data }
   } catch (error) {
-    console.error('Erro ao retomar produto:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+    console.error('❌ resumeProduct error:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao retomar produto' 
+    }
   }
 }
 
 /**
- * Bloqueia produto - Mock
+ * Bloqueia produto
  */
-export async function blockProduct(productId: string, reason: string): Promise<ProductOperationResult> {
+export async function blockProduct(productId: string): Promise<ProductOperationResult> {
   try {
-    console.log('🔄 blockProduct: Mock operation para GitHub Pages')
+    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
+      `/api/products/${productId}/block`,
+      { method: 'POST' }
+    )
     
-    const mockProduct = createMockProduct({
-      id: productId,
-      status: 'BLOCKED'
-    })
-    
-    broadcastChange({ type: 'product', action: 'block' })
-    mutate('/api/products')
+    if (!data.success) {
+      return { success: false, error: data.error || 'Erro ao bloquear produto', details: data.details }
+    }
 
-    return { success: true, data: mockProduct }
+    return { success: true, data: data.data }
   } catch (error) {
-    console.error('Erro ao bloquear produto:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+    console.error('❌ blockProduct error:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao bloquear produto' 
+    }
   }
 }
 
 /**
- * Carrega produtos e estatísticas - Mock
+ * Carrega produtos e estatísticas
  */
-export async function loadProductsAndStats(): Promise<{
-  products: Product[]
-  stats: {
-    total: number
-    inProgress: number
-    paused: number
-    completed: number
-    blocked: number
-  }
-}> {
-  console.log('🚀 LOADING DATA: Usando dados mock (GitHub Pages)')
-
-  const products: Product[] = [
-    createMockProduct({
-      id: '1',
-      name: 'Produto Mock 1',
-      op: 'OP001',
-      batch: 'B001',
-      quantity: 1000,
-      currentStage: 'BACKLOG',
-      status: 'ACTIVE'
-    }),
-    createMockProduct({
-      id: '2',
-      name: 'Produto Mock 2',
-      op: 'OP002',
-      batch: 'B002',
-      quantity: 1500,
-      currentStage: 'PRODUCAO_1KG',
-      status: 'PAUSED'
-    }),
-    createMockProduct({
-      id: '3',
-      name: 'Produto Mock 3',
-      op: 'OP003',
-      batch: 'B003',
-      quantity: 2000,
-      currentStage: 'APROVADO',
-      status: 'COMPLETED'
-    })
-  ]
-
-  const semiFinishedCount = 2
-
-  const inProgress = products.filter((p) => String(p.status).toUpperCase() === 'ACTIVE').length
-  const paused = products.filter((p) => String(p.status).toUpperCase() === 'PAUSED').length
-  const blocked = products.filter((p) => String(p.status).toUpperCase() === 'BLOCKED').length
-  const completedFromProducts = products.filter((p) => String(p.status).toUpperCase() === 'COMPLETED').length
-  const completed = completedFromProducts + semiFinishedCount
-
-  const stats = {
-    total: products.length,
-    inProgress,
-    paused,
-    completed,
-    blocked
-  }
-
-  return { products, stats }
-}
-
-/**
- * Avança estágio do produto (alias) - Mock
- */
-export async function advanceProductStage(productId: string): Promise<ProductOperationResult> {
-  return advanceStage(productId)
-}
-
-/**
- * Deleta produto - Mock
- */
-export async function deleteProduct(productId: string): Promise<{ success: boolean; error?: string }> {
+export async function loadProducts(): Promise<{ products: Product[]; stats: any }> {
   try {
-    console.log('🗑️ deleteProduct: Mock operation para GitHub Pages')
-    
-    broadcastChange({ type: 'product', action: 'delete' })
-    mutate('/api/products')
+    const [productsData, statsData] = await Promise.all([
+      apiFetch<{ success: boolean; data?: Product[]; error?: string }>('/api/products'),
+      apiFetch<{ success: boolean; data?: any; error?: string }>('/api/stats')
+    ])
 
-    return { success: true }
+    if (!productsData.success || !productsData.data) {
+      throw new Error(productsData.error || 'Erro ao carregar produtos')
+    }
+
+    if (!statsData.success || !statsData.data) {
+      console.warn('⚠️ Could not load stats, using empty object')
+      return { products: productsData.data, stats: {} }
+    }
+
+    return { products: productsData.data, stats: statsData.data }
   } catch (error) {
-    console.error('Erro ao deletar produto:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' }
+    console.error('❌ loadProducts error:', error)
+    throw error
+  }
+}
+
+/**
+ * Avança estágio do produto (alias)
+ */
+export { advanceProductStage as advanceStage }
+
+/**
+ * Deleta produto
+ */
+export async function deleteProduct(productId: string): Promise<ProductOperationResult> {
+  try {
+    const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
+      `/api/products/${productId}`,
+      { method: 'DELETE' }
+    )
+    
+    if (!data.success) {
+      return { success: false, error: data.error || 'Erro ao deletar produto', details: data.details }
+    }
+
+    return { success: true, data: data.data }
+  } catch (error) {
+    console.error('❌ deleteProduct error:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Erro desconhecido ao deletar produto' 
+    }
+  }
+}
+
+/**
+ * Notifica o sistema de monitoramento de processos
+ */
+interface ProcessMonitorNotification {
+  productId: string
+  productName: string
+  action: 'stage_advance' | 'finalize' | 'pause' | 'resume' | 'block'
+  fromStage?: ProductStage
+  toStage?: ProductStage
+  timestamp: string
+}
+
+async function notifyProcessMonitor(notification: ProcessMonitorNotification): Promise<void> {
+  try {
+    await apiFetch('/api/process-monitor/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(notification)
+    })
+  } catch (error) {
+    // Não falhar a operação principal se o monitoramento falhar
+    console.warn('⚠️ Could not notify process monitor:', error)
   }
 }

@@ -9,6 +9,7 @@
 
 import { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
 import type { Product, HourlyControl, ProductStage, ProductStatus } from '@/lib/types-modern'
+import { loadProducts } from '@/lib/product-operations'
 
 // Tipos necessários
 type MonitoringData = {
@@ -165,50 +166,9 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_LOADING', payload: false })
       }, 12000)
 
-      // Usar dados mock para GitHub Pages
-      const products: Product[] = [
-        {
-          id: '1',
-          name: 'Produto Mock 1',
-          op: 'OP001',
-          batch: 'B001',
-          quantity: 1000,
-          currentStage: 'BACKLOG',
-          status: 'ACTIVE',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          stageHistory: [],
-          hourlyControls: [],
-        },
-        {
-          id: '2',
-          name: 'Produto Mock 2',
-          op: 'OP002',
-          batch: 'B002',
-          quantity: 1500,
-          currentStage: 'PRODUCAO_1KG',
-          status: 'PAUSED',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          stageHistory: [],
-          hourlyControls: [],
-        }
-      ]
+      // Carregar dados das APIs reais
+      const { products, stats } = await loadProducts()
       dispatch({ type: 'SET_PRODUCTS', payload: products })
-
-      // Estatísticas mock
-      const inProgress = products.filter((p) => String(p.status).toUpperCase() === 'ACTIVE').length
-      const paused = products.filter((p) => String(p.status).toUpperCase() === 'PAUSED').length
-      const blocked = products.filter((p) => String(p.status).toUpperCase() === 'BLOCKED').length
-      const completed = products.filter((p) => String(p.status).toUpperCase() === 'COMPLETED').length
-      
-      const stats = {
-        total: products.length,
-        inProgress,
-        paused,
-        completed,
-        blocked
-      } as GlobalState['stats']
       dispatch({ type: 'SET_STATS', payload: stats })
 
       // Dados de monitoramento (placeholder vazio até termos API)
