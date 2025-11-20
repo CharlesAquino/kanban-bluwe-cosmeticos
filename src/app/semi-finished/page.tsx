@@ -7,13 +7,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Send, PackageCheck, Undo2, Loader2, Trash2, Settings2, Layers, Droplet, TrendingUp, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, Package, Clock } from 'lucide-react'
+import { Send, PackageCheck, Undo2, Loader2, Trash2, Settings2, Layers, Droplet, TrendingUp, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, Package, Clock, Brain } from 'lucide-react'
 import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor } from '@/lib/semi-finished-lib'
 import Link from 'next/link'
 
 export default function SemiFinishedPage() {
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
   const [overviewDropdownOpen, setOverviewDropdownOpen] = useState(false)
+  const [aiAnalysis, setAiAnalysis] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState('')
   
   const { data, error, isLoading } = useSWR<SemiItem[]>('/api/semi-finished', semiFinishedFetcher, {
     revalidateOnFocus: false,
@@ -30,6 +33,59 @@ export default function SemiFinishedPage() {
   const [legacyQty, setLegacyQty] = useState('')
   const [legacyBusy, setLegacyBusy] = useState(false)
   const [legacyError, setLegacyError] = useState<string | null>(null)
+
+  const generateAiAnalysis = async () => {
+    setAiLoading(true)
+    setAiError('')
+    setAiAnalysis('')
+
+    try {
+      const response = await fetch('/api/ai/orchestrator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'user',
+              content: `Analise a situação atual dos produtos semi-acabados e forneça:
+              
+**🔍 ANÁLISE GERAL**
+- Status geral do estoque semi-acabado
+- Produtos em destaque (críticos ou bem gerenciados)
+
+**⚠️ RISCOS E PRIORIDADES**
+- Produtos com risco de vencimento ou escassez
+- Gargalos no processo de envase
+- Itens que precisam de atenção imediata
+
+**📋 AÇÕES RECOMENDADAS**
+- Ações prioritárias para hoje/esta semana
+- Otimização do fluxo de produção
+- Sugestões para melhorar o controle
+
+Dados atuais: ${items.length} produtos, famílias: ${Object.keys(groups).join(', ')}
+
+Formato: Use títulos claros, linguagem direta e foco em ações práticas.`
+            }
+          ],
+          options: { temperature: 0.7, max_tokens: 2000 }
+        })
+      })
+
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao gerar análise')
+      }
+
+      setAiAnalysis(data.response || '')
+
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Erro desconhecido')
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   const groups = useMemo(() => {
     return items.reduce((acc, it) => {
@@ -270,6 +326,59 @@ export default function SemiFinishedPage() {
             <MetricCard label="Saldo disponível" value={`${dashboardStats.totalSaldo.toFixed(1)} kg`} icon={<Droplet className="h-4 w-4" />} accent="from-emerald-400/40 to-emerald-400/10" />
             <MetricCard label="Famílias" value={dashboardStats.familias} icon={<TrendingUp className="h-4 w-4" />} accent="from-indigo-400/40 to-indigo-400/10" />
           </div>
+        </section>
+
+        {/* AI Analysis Section */}
+        <section>
+          <Card className="bg-white/80 border border-sky-100 shadow-xl">
+            <div className="p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-sky-600/80">Análise Inteligente</p>
+                  <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-sky-600" />
+                    Análise IA dos Semi-Acabados
+                  </h2>
+                </div>
+                <button
+                  onClick={generateAiAnalysis}
+                  disabled={aiLoading}
+                  className="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+                  {aiLoading ? 'Analisando...' : 'Gerar Análise'}
+                </button>
+              </div>
+
+              {aiError && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-800">❌ {aiError}</p>
+                </div>
+              )}
+
+              {aiAnalysis && (
+                <div className="prose prose-slate max-w-none">
+                  <div className="whitespace-pre-wrap bg-slate-50 rounded-lg p-6 border border-slate-200 text-sm">
+                    {aiAnalysis}
+                  </div>
+                </div>
+              )}
+
+              {!aiAnalysis && !aiLoading && !aiError && (
+                <div className="text-center py-8 text-slate-500">
+                  <Brain className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                  <p>Clique em "Gerar Análise" para obter insights inteligentes sobre o estoque semi-acabado</p>
+                </div>
+              )}
+
+              {aiLoading && (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div>
+                  <p className="mt-4 text-slate-600">Analisando dados com IA...</p>
+                </div>
+              )}
+            </div>
+          </Card>
         </section>
 
         <section>
