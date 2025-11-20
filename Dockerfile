@@ -1,9 +1,9 @@
-# Usar Node.js 18 Alpine
-FROM node:18-alpine AS base
+# Usar Node.js 20 Alpine (requerido por várias dependências e better-sqlite3)
+FROM node:20-alpine AS base
 
-# Instalar dependências apenas quando o package.json mudar
+# Instalar dependências do sistema para build nativo (better-sqlite3, node-gyp)
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 # Copiar arquivos de dependência
