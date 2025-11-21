@@ -26,9 +26,17 @@ export interface ProductOperationResult {
 
 /**
  * Finaliza produto (envia para Semi-Acabados)
+ * Aceita tanto uma string (productId) quanto um objeto com parâmetros completos
  */
-export async function finalizeProduct(params: FinalizeProductParams): Promise<ProductOperationResult> {
+export async function finalizeProduct(
+  paramsOrId: FinalizeProductParams | string
+): Promise<ProductOperationResult> {
   try {
+    const params: FinalizeProductParams =
+      typeof paramsOrId === 'string'
+        ? { productId: paramsOrId }
+        : paramsOrId
+
     const data = await apiFetch<{ success: boolean; data?: Product; error?: string; details?: string }>(
       `/api/products/${params.productId}/finalize`,
       {
