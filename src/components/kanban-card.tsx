@@ -53,6 +53,8 @@ const KanbanCardBase = ({
   modOperatorLabel,
   finalizingProducts,
 }: KanbanCardProps) => {
+  const productId = (product as any).id ?? (product as any).productId
+
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const [hourlyControlExpanded, setHourlyControlExpanded] = useState(false)
   const {
@@ -62,7 +64,7 @@ const KanbanCardBase = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: product.id })
+  } = useSortable({ id: productId })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -123,20 +125,20 @@ const KanbanCardBase = ({
   const handleBlockProduction = () => {
     const reason = prompt('Motivo do bloqueio:', '')
     if (reason) {
-      onBlockProduction(product.id, reason)
+      onBlockProduction(productId, reason)
     }
   }
 
   const handleDeleteProduct = () => {
     if (confirm(`Tem certeza que deseja remover o produto ${product.name}?`)) {
-      onDeleteProduct(product.id)
+      onDeleteProduct(productId)
     }
   }
 
   const handleFinalize = () => {
     const confirmed = confirm('Finalizar este produto e enviar para Semi-Acabados?')
     if (confirmed) {
-      onFinalize(product.id)
+      onFinalize(productId)
     }
   }
 
@@ -433,10 +435,10 @@ const KanbanCardBase = ({
                 e.stopPropagation()
                 handleFinalize()
               }}
-              disabled={finalizingProducts?.has(product.id)}
+              disabled={finalizingProducts?.has(productId)}
               title="Finalizar e enviar para Semi-Acabados"
             >
-              {finalizingProducts?.has(product.id) ? (
+              {finalizingProducts?.has(productId) ? (
                 <>
                   <div className="h-3 w-3 mr-1 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                   Finalizando...
