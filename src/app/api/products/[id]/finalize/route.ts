@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
@@ -27,10 +26,9 @@ export async function POST(
     const { id } = params
     // Família passa a vir do produto
 
-    // Buscar produto com Prisma
-    const product = await prisma.product.findUnique({
-      where: { id }
-    })
+    // Buscar produto no banco SQLite principal (tabela products)
+    const selectProduct = db.prepare('SELECT * FROM products WHERE id = ? LIMIT 1')
+    const product = selectProduct.get(id) as Product | undefined
 
     if (!product) {
       return NextResponse.json({ success: false, error: 'Produto não encontrado' }, { status: 404 })
