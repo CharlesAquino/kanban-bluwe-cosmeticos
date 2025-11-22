@@ -906,7 +906,7 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
 
   return (
     <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm bg-white">
-      <div className={`px-3 py-2 ${soft ? '' : 'bg-slate-50'}`} style={soft ? { backgroundColor: soft } : {}}>
+      <div className={`px-3 py-2 ${soft ? '' : 'bg-slate-50'}`}>
         <div className="flex items-center justify-between">
           <div className="min-w-0">
             <div className="font-semibold text-slate-800 truncate">{item.name}</div>

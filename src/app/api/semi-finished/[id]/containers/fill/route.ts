@@ -40,7 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     // Usar transação para garantir consistência
     const result = await prisma.$transaction(async (tx) => {
       // 1. Atualizar os recipientes para status 'quarantined' (envase direto para quarentena)
-      const updatedContainers = await tx.packagingContainer.updateMany({
+      const updatedContainers = await tx.packagingContainers.updateMany({
         where: {
           id: { in: containerIds },
           semiFinishedId: params.id,
