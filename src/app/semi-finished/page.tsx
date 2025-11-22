@@ -591,6 +591,11 @@ function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: (
             <div className="font-semibold text-slate-800 truncate text-sm leading-tight">{product.name}</div>
             <div className="text-xs text-slate-600 truncate leading-tight">
               OP: {product.op} • Lote: {product.batch}
+              {product.manufacturingDate && (
+                <span className="block text-slate-500">
+                  Fab: {new Date(product.manufacturingDate).toLocaleDateString('pt-BR')}
+                </span>
+              )}
             </div>
           </div>
           <div className="ml-1.5 flex flex-col items-end gap-0.5">
