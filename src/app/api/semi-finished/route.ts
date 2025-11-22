@@ -12,7 +12,7 @@ export async function GET() {
     })
 
     // Transformar camelCase do Prisma para snake_case do frontend
-    const transformedItems = items.map(item => ({
+    const transformedItems = items.map((item: any) => ({
       ...item,
       quantity_total: item.quantityTotal,
       quantity_envasado: item.quantityEnvasado,
