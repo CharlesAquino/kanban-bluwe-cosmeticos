@@ -11,7 +11,17 @@ export async function GET() {
       orderBy: { updatedAt: 'desc' },
     })
 
-    return NextResponse.json({ success: true, data: items })
+    // Transformar camelCase do Prisma para snake_case do frontend
+    const transformedItems = items.map(item => ({
+      ...item,
+      quantity_total: item.quantityTotal,
+      quantity_envasado: item.quantityEnvasado,
+      manufacturingDate: item.manufacturingDate,
+      created_at: item.createdAt,
+      updated_at: item.updatedAt,
+    }))
+
+    return NextResponse.json({ success: true, data: transformedItems })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido'
     return NextResponse.json(
