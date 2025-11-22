@@ -31,7 +31,7 @@ export default function SemiFinishedPage() {
   useEffect(() => {
     const unsub = subscribeChanges((ev) => {
       if (ev.type === 'semi_finished') {
-        mutate('/api/semi-finished')
+        mutate()
       }
     })
     return () => unsub()

@@ -84,7 +84,7 @@ export default function Home() {
     fetchData()
   }, [fetchData])
 
-  const handleAdvance = async (productId: string, nextStage: ProductStage, mod: number) => {
+  const handleAdvance = async (productId: string, nextStage: ProductStage, mod: string) => {
     try {
       const res = await advanceProductStage({ productId, nextStage, mod })
       if (!res.success) throw new Error(res.error || 'Falha ao avançar')
@@ -119,7 +119,7 @@ export default function Home() {
 
   const handleBlock = async (productId: string, reason: string) => {
     try {
-      const res = await blockProduct({ productId, reason })
+      const res = await blockProduct(productId)
       if (!res.success) throw new Error(res.error || 'Falha ao bloquear')
       showToast('Produção bloqueada', 'info')
       await fetchData()

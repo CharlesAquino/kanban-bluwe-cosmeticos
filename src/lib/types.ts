@@ -72,6 +72,7 @@ export interface Product {
   quantity: number // Quantidade em kg
   currentStage: ProductStage
   status: ProductStatus
+  manufacturingDate?: string // Data de fabricação (ISO string)
   createdAt: string
   updatedAt: string
   createdById?: string
