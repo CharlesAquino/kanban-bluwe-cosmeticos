@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-import { getDb } from '@/lib/db'
-const db = getDb()
+import { prisma } from '@/lib/prisma'
 
 // DELETE /api/semi-finished/[id] - Excluir item de semi-acabados e seus vínculos
 export async function DELETE(
@@ -13,30 +12,36 @@ export async function DELETE(
   try {
     const { id } = params
 
-    const sel = db.prepare('SELECT * FROM semi_finished_items WHERE id = ?')
-    const existing = sel.get(id) as any | undefined
+    const existing = await prisma.semiFinishedItem.findUnique({
+      where: { id },
+    })
+
     if (!existing) {
       return NextResponse.json(
         { success: false, error: 'Item de Semi-Acabados não encontrado' },
-        { status: 404 }
+        { status: 404 },
       )
     }
 
-    const delBuckets = db.prepare('DELETE FROM semi_finished_buckets WHERE semiFinishedId = ?')
-    delBuckets.run(id)
+    await prisma.$transaction(async (tx) => {
+      await tx.semiFinishedBucket.deleteMany({
+        where: { semiFinishedId: id },
+      })
 
-    const delLogs = db.prepare('DELETE FROM packaging_logs WHERE semiFinishedId = ?')
-    delLogs.run(id)
+      // packaging_logs era usado no SQLite; se existir em Postgres, migramos depois.
+      // Aqui focamos em remover buckets e o item principal.
 
-    const delItem = db.prepare('DELETE FROM semi_finished_items WHERE id = ?')
-    delItem.run(id)
+      await tx.semiFinishedItem.delete({
+        where: { id },
+      })
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido'
     return NextResponse.json(
       { success: false, error: 'Erro interno do servidor', details: message },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

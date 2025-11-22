@@ -81,15 +81,15 @@ export async function PUT(
           where: {
             op: normalizedOp,
             batch: normalizedBatch,
-            id: { not: id } // Ignorar o próprio produto
-          }
+            id: { not: id }, // Ignorar o próprio produto
+          },
         }),
-        prisma.semiFinishedItems.findFirst({
+        prisma.semiFinishedItem.findFirst({
           where: {
             op: normalizedOp,
-            batch: normalizedBatch
-          }
-        })
+            batch: normalizedBatch,
+          },
+        }),
       ])
 
       if (existingProduct) {

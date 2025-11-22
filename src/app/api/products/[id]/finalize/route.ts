@@ -32,7 +32,7 @@ export async function POST(
     }
 
     // Verificar se já existe Semi-Acabado com mesma OP + Lote
-    const existingSfi = await prisma.semiFinishedItems.findFirst({
+    const existingSfi = await prisma.semiFinishedItem.findFirst({
       where: {
         op: product.op,
         batch: product.batch,
@@ -48,7 +48,7 @@ export async function POST(
 
     // Criar item de semi-acabado e remover produto do kanban de produção
     const semiFinished = await prisma.$transaction(async (tx) => {
-      const created = await tx.semiFinishedItems.create({
+      const created = await tx.semiFinishedItem.create({
         data: {
           productId: product.id,
           name: product.name,

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Send, PackageCheck, Undo2, Loader2, Trash2, Settings2, Layers, Droplet, TrendingUp, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, Package, Clock, Brain } from 'lucide-react'
-import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor } from '@/lib/semi-finished-lib'
+import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, deleteSemiFinished } from '@/lib/semi-finished-lib'
 import Link from 'next/link'
 
 export default function SemiFinishedPage() {
@@ -648,11 +648,14 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
     if (!confirm('Excluir este produto de Semi-Acabados? Esta ação não pode ser desfeita.')) return
     setBusy('delete')
     try {
-      console.log('🗑️ deleteItem: Mock operation para GitHub Pages')
-      // Mock operation
-      await new Promise(resolve => setTimeout(resolve, 500))
-      await Promise.all([refresh(), mutate('/api/semi-finished')])
-      onDeleted?.()
+      const result = await deleteSemiFinished(item.id)
+      if (!result.success) {
+        console.error('Erro ao excluir semi-acabado:', result.error)
+        alert(result.error || 'Erro ao excluir produto')
+      } else {
+        await Promise.all([refresh(), mutate('/api/semi-finished')])
+        onDeleted?.()
+      }
     } catch (e) {
       console.error(e)
       alert('Erro ao excluir produto')

@@ -58,15 +58,15 @@ export async function POST(request: NextRequest) {
       prisma.product.findFirst({
         where: {
           op: normalizedOp,
-          batch: normalizedBatch
-        }
+          batch: normalizedBatch,
+        },
       }),
-      prisma.semiFinishedItems.findFirst({
+      prisma.semiFinishedItem.findFirst({
         where: {
           op: normalizedOp,
-          batch: normalizedBatch
-        }
-      })
+          batch: normalizedBatch,
+        },
+      }),
     ])
 
     if (existingProduct) {
