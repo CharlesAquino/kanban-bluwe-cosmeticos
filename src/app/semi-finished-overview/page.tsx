@@ -30,7 +30,7 @@ export default function SemiFinishedOverviewPage() {
   useEffect(() => {
     const unsub = subscribeChanges((ev) => {
       if (ev.type === 'semi_finished') {
-        mutate('/api/semi-finished')
+        mutate()
       }
     })
     return () => unsub()
@@ -287,11 +287,11 @@ export default function SemiFinishedOverviewPage() {
 }
 
 function OverviewItemCard({ product }: { product: SemiItem }) {
-  const { buckets, loading, error } = useSemiFinishedBuckets(product.id)
+  const { data: buckets, isLoading: loading, error } = useSemiFinishedBuckets(product.id)
   const saldo = Number(product.quantity_total) - Number(product.quantity_envasado)
 
   const bucketsArray = buckets || []
-  const packagedCount = bucketsArray.filter((b) => b.status === 'packaged').length
+  const packagedCount = bucketsArray.filter((b: Bucket) => b.status === 'packaged').length
   const totalBuckets = bucketsArray.length
 
   return (
@@ -359,7 +359,7 @@ function OverviewItemCard({ product }: { product: SemiItem }) {
 
         {totalBuckets > 0 && !loading && !error && (
           <div className="flex flex-wrap gap-1.5">
-            {buckets.slice(0, 6).map((bucket) => {
+            {buckets.slice(0, 6).map((bucket: Bucket) => {
               const color =
                 bucket.status === 'packaged'
                   ? 'bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-800 border-emerald-200'
