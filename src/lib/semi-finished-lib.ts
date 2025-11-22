@@ -27,6 +27,18 @@ export interface Bucket {
   semiFinishedId: string
 }
 
+export interface PackagingContainer {
+  id: string
+  containerType: string
+  family: string
+  capacityMl: number
+  capacityWeightG: number
+  currentQuantity: number
+  status: 'available' | 'filled' | 'quarantined' | 'released'
+  batchCode?: string
+  semiFinishedId: string
+}
+
 export interface CreateSemiParams {
   productId?: string
   name: string
@@ -72,6 +84,36 @@ export function useSemiFinishedBuckets(semiFinishedId: string) {
       
       if (!response.ok) {
         throw new Error(`Failed to fetch buckets: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      return data.success ? data.data || [] : []
+    },
+    {
+      revalidateOnFocus: false,
+      refreshInterval: 10000,
+    }
+  )
+
+  return {
+    data: data || [],
+    isLoading,
+    error,
+    mutate,
+  }
+}
+
+/**
+ * Hook para buscar recipientes de envase de um semi-acabado
+ */
+export function usePackagingContainers(semiFinishedId: string) {
+  const { data, error, isLoading, mutate } = useSWR<PackagingContainer[]>(
+    semiFinishedId ? `/api/semi-finished/${semiFinishedId}/containers` : null,
+    async (url: string): Promise<PackagingContainer[]> => {
+      const response = await fetch(url)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch containers: ${response.statusText}`)
       }
       
       const data = await response.json()
@@ -285,6 +327,84 @@ export async function releaseBucketsFromQuarantine(semiFinishedId: string, bucke
     
     if (!response.ok || !data.success) {
       return { success: false, error: data.error || 'Failed to release buckets from quarantine' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+}
+
+/**
+ * Gera recipientes de envase para um semi-acabado
+ */
+export async function generatePackagingContainers(semiFinishedId: string, containerType: string, quantity: number): Promise<{ success: boolean; data?: PackagingContainer[]; error?: string }> {
+  try {
+    const response = await fetch(`/api/semi-finished/${semiFinishedId}/containers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ containerType, quantity })
+    })
+
+    const data = await response.json()
+    
+    if (!response.ok || !data.success) {
+      return { success: false, error: data.error || 'Failed to generate containers' }
+    }
+
+    return { success: true, data: data.data }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+}
+
+/**
+ * Envia recipientes para quarentena
+ */
+export async function sendContainersToQuarantine(semiFinishedId: string, containerIds: string[]): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/semi-finished/${semiFinishedId}/containers/quarantine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ containerIds })
+    })
+
+    const data = await response.json()
+    
+    if (!response.ok || !data.success) {
+      return { success: false, error: data.error || 'Failed to send containers to quarantine' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+}
+
+/**
+ * Libera recipientes da quarentena
+ */
+export async function releaseContainersFromQuarantine(semiFinishedId: string, containerIds: string[]): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/semi-finished/${semiFinishedId}/containers/release`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ containerIds })
+    })
+
+    const data = await response.json()
+    
+    if (!response.ok || !data.success) {
+      return { success: false, error: data.error || 'Failed to release containers from quarantine' }
     }
 
     return { success: true }

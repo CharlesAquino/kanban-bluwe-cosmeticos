@@ -94,6 +94,7 @@ model SemiFinishedItem {
   updatedAt        DateTime @updatedAt
 
   buckets SemiFinishedBucket[]
+  packagingContainers PackagingContainer[]
 
   @@unique([op, batch])
   @@index([op, batch])
@@ -113,4 +114,21 @@ model SemiFinishedBucket {
   updatedAt         DateTime @updatedAt
 
   @@map("semi_finished_buckets")
+}
+
+model PackagingContainer {
+  id               String   @id @default(cuid())
+  semiFinishedId   String
+  semiFinished     SemiFinishedItem @relation(fields: [semiFinishedId], references: [id])
+  containerType    String   // Tipo: "pote_30g", "frasco_11ml", "frasco_500ml", "frasco_130ml", "frasco_9ml"
+  family           String   // Família do produto
+  capacityMl       Float    // Capacidade em ml
+  capacityWeightG  Float    // Capacidade em gramas (para produtos densos)
+  currentQuantity  Float    // Quantidade atual
+  status           String   @default("available") // available, filled, quarantined, released
+  batchCode        String?  // Código do lote do recipiente
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("packaging_containers")
 }
