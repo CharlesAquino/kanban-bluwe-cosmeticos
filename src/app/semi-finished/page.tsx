@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Send, PackageCheck, Undo2, Loader2, Trash2, Settings2, Layers, Droplet, TrendingUp, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, Package, Clock, Brain } from 'lucide-react'
-import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, deleteSemiFinished, createSemiFinished } from '@/lib/semi-finished-lib'
+import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, deleteSemiFinished, createSemiFinished, packageBucket as apiPackageBucket, returnBucket as apiReturnBucket, sendBucketsToPackaging } from '@/lib/semi-finished-lib'
 import Link from 'next/link'
 import { subscribeChanges } from '@/lib/bus'
 
@@ -680,13 +680,26 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
 
   const sendToPackaging = async () => {
     if (!selectedIds.length) return
+    if (!confirm(`Enviar ${selectedIds.length} balde(s) para o envase?`)) return
     setBusy('send')
-    console.log('📦 sendToPackaging: Mock operation para GitHub Pages')
-    // Mock operation
-    await new Promise(resolve => setTimeout(resolve, 500))
-    await Promise.all([refresh(), mutate('/api/semi-finished')])
-    setSelected({})
-    setBusy(null)
+    
+    try {
+      const result = await sendBucketsToPackaging(item.id, selectedIds)
+      if (!result.success) {
+        alert(`Erro ao enviar para envase: ${result.error}`)
+        return
+      }
+      
+      // Atualizar dados em tempo real
+      await Promise.all([refresh(), mutate('/api/semi-finished')])
+      setSelected({})
+      alert(`✅ ${selectedIds.length} balde(s) enviado(s) para o envase!`)
+    } catch (error) {
+      console.error('Erro ao enviar para envase:', error)
+      alert('Erro ao enviar baldes para envase. Tente novamente.')
+    } finally {
+      setBusy(null)
+    }
   }
 
   const deleteItem = async () => {
@@ -717,12 +730,29 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
     const delta = Number(v)
     if (!Number.isFinite(delta) || delta <= 0) return
     setBusy('package')
-    console.log('📦 packageBucket: Mock operation para GitHub Pages')
-    // Mock operation
-    await new Promise(resolve => setTimeout(resolve, 500))
-    await Promise.all([refresh(), mutate('/api/semi-finished')])
-    setSelected({})
-    setBusy(null)
+    
+    try {
+      const result = await apiPackageBucket(id, delta)
+      if (!result.success) {
+        alert(`Erro ao envasar: ${result.error}`)
+        return
+      }
+      
+      // Atualizar dados em tempo real
+      await Promise.all([refresh(), mutate('/api/semi-finished')])
+      setSelected({})
+      
+      // Mostrar dados atualizados
+      if (result.data) {
+        const { newQty, status, newEnvasado, newSaldo, deltaKg } = result.data
+        alert(`✅ Envase registrado!\nEnvasado: ${deltaKg}kg\nSaldo do balde: ${newQty}kg\nTotal envasado: ${newEnvasado}kg\nSaldo da OP: ${newSaldo}kg`)
+      }
+    } catch (error) {
+      console.error('Erro ao envasar balde:', error)
+      alert('Erro ao envasar balde. Tente novamente.')
+    } finally {
+      setBusy(null)
+    }
   }
 
   const returnBucket = async () => {
@@ -730,12 +760,24 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
     if (!id) return
     if (!confirm('Devolver este balde para o estoque de Semi‑Acabados?')) return
     setBusy('return')
-    console.log('🔄 returnBucket: Mock operation para GitHub Pages')
-    // Mock operation
-    await new Promise(resolve => setTimeout(resolve, 500))
-    await Promise.all([refresh(), mutate('/api/semi-finished')])
-    setSelected({})
-    setBusy(null)
+    
+    try {
+      const result = await apiReturnBucket(id)
+      if (!result.success) {
+        alert(`Erro ao devolver: ${result.error}`)
+        return
+      }
+      
+      // Atualizar dados em tempo real
+      await Promise.all([refresh(), mutate('/api/semi-finished')])
+      setSelected({})
+      alert('✅ Balde devolvido para o estoque!')
+    } catch (error) {
+      console.error('Erro ao devolver balde:', error)
+      alert('Erro ao devolver balde. Tente novamente.')
+    } finally {
+      setBusy(null)
+    }
   }
 
   const saldo = Number(item.quantity_total) - Number(item.quantity_envasado)
