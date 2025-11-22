@@ -35,6 +35,7 @@ export function ProductEditDialog({ product, open, onOpenChange, onSaved }: Prod
   const [batch, setBatch] = useState("");
   const [quantity, setQuantity] = useState("");
   const [createdById, setCreatedById] = useState("");
+  const [manufacturingDate, setManufacturingDate] = useState("");
   const [operators, setOperators] = useState<Operator[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -47,6 +48,7 @@ export function ProductEditDialog({ product, open, onOpenChange, onSaved }: Prod
     setBatch(product.batch || "");
     setQuantity(String(product.quantity ?? ""));
     setCreatedById(product.createdById || "");
+    setManufacturingDate(product.manufacturingDate ? new Date(product.manufacturingDate).toISOString().split('T')[0] : "");
 
     const loadOperators = async () => {
       try {
@@ -96,6 +98,9 @@ export function ProductEditDialog({ product, open, onOpenChange, onSaved }: Prod
       }
       if (createdById) {
         body.createdById = createdById;
+      }
+      if (manufacturingDate) {
+        body.manufacturingDate = manufacturingDate;
       }
 
       const result = await apiFetch<{ success: boolean; data?: unknown; error?: string; details?: string }>(
@@ -157,7 +162,7 @@ export function ProductEditDialog({ product, open, onOpenChange, onSaved }: Prod
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <Label htmlFor="edit-op">OP *</Label>
                   <Input
@@ -182,6 +187,15 @@ export function ProductEditDialog({ product, open, onOpenChange, onSaved }: Prod
                     step="0.01"
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-manufacturing-date">Data Fab.</Label>
+                  <Input
+                    id="edit-manufacturing-date"
+                    type="date"
+                    value={manufacturingDate}
+                    onChange={(e) => setManufacturingDate(e.target.value)}
                   />
                 </div>
               </div>

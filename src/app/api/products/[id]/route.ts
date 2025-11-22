@@ -52,7 +52,7 @@ export async function PUT(
   try {
     const { id } = params
     const body = await request.json()
-    const { name, op, batch, quantity, image, createdById } = body
+    const { name, op, batch, quantity, image, createdById, manufacturingDate } = body
 
     console.log('=== API PUT: Atualizando produto ===')
     console.log('Dados recebidos:', { id, name, op, batch, quantity, image })
@@ -119,6 +119,7 @@ export async function PUT(
         quantity: quantity !== undefined ? Number(quantity) : product.quantity,
         image: image !== undefined ? (String(image).trim() || null) : product.image,
         createdById: createdById !== undefined ? String(createdById) : product.createdById,
+        manufacturingDate: manufacturingDate !== undefined ? new Date(manufacturingDate) : product.manufacturingDate,
         updatedAt: new Date()
       }
     })
