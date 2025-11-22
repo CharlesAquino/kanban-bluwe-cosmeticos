@@ -113,7 +113,7 @@ Formato: Use títulos claros, linguagem direta e foco em ações práticas.`
   const dashboardStats = useMemo(() => {
     const totalProdutos = items.length
     const aguardando = items.filter((item) => item.status === 'aguardando').length
-    const totalSaldo = items.reduce((sum, item) => sum + (Number(item.quantity_total) - Number(item.quantity_envasado)), 0)
+    const totalSaldo = items.reduce((sum, item) => sum + ((Number(item.quantity_total) || 0) - (Number(item.quantity_envasado) || 0)), 0)
     const familias = Object.keys(groups).length
 
     return { totalProdutos, aguardando, totalSaldo, familias }
@@ -336,7 +336,7 @@ Formato: Use títulos claros, linguagem direta e foco em ações práticas.`
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard label="Produtos ativos" value={dashboardStats.totalProdutos} icon={<Layers className="h-4 w-4" />} accent="from-sky-500/30 to-sky-500/5" />
             <MetricCard label="Aguardando ação" value={dashboardStats.aguardando} icon={<Settings2 className="h-4 w-4" />} accent="from-amber-400/40 to-amber-400/10" />
-            <MetricCard label="Saldo disponível" value={`${dashboardStats.totalSaldo.toFixed(1)} kg`} icon={<Droplet className="h-4 w-4" />} accent="from-emerald-400/40 to-emerald-400/10" />
+            <MetricCard label="Saldo disponível" value={`${(dashboardStats.totalSaldo || 0).toFixed(1)} kg`} icon={<Droplet className="h-4 w-4" />} accent="from-emerald-400/40 to-emerald-400/10" />
             <MetricCard label="Famílias" value={dashboardStats.familias} icon={<TrendingUp className="h-4 w-4" />} accent="from-indigo-400/40 to-indigo-400/10" />
           </div>
         </section>
@@ -568,7 +568,7 @@ function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: (
           </div>
           <div className="ml-1.5 flex flex-col items-end gap-0.5">
             <Badge className="bg-gradient-to-r from-slate-100 to-slate-50 text-slate-700 ring-1 ring-slate-200/50 text-xs px-1.5 py-0.5 font-medium">
-              {saldo.toFixed(1)}kg
+              {(saldo || 0).toFixed(1)}kg
             </Badge>
             <div className={`text-xs font-medium ${statusSummary.color} leading-tight`}>
               {statusSummary.text}
@@ -579,15 +579,15 @@ function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: (
         <div className="grid grid-cols-3 gap-1.5 mb-2.5">
           <div className="text-center bg-gradient-to-b from-slate-50 to-white rounded-md border border-slate-200/50 px-1.5 py-1.5">
             <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Total</div>
-            <div className="font-bold text-slate-900 text-xs leading-tight">{product.quantity_total.toFixed(1)}kg</div>
+            <div className="font-bold text-slate-900 text-xs leading-tight">{(product.quantity_total || 0).toFixed(1)}kg</div>
           </div>
           <div className="text-center bg-gradient-to-b from-emerald-50 to-white rounded-md border border-emerald-200/50 px-1.5 py-1.5">
             <div className="text-[10px] text-emerald-600 font-medium uppercase tracking-wide">Envasado</div>
-            <div className="font-bold text-emerald-700 text-xs leading-tight">{product.quantity_envasado.toFixed(1)}kg</div>
+            <div className="font-bold text-emerald-700 text-xs leading-tight">{(product.quantity_envasado || 0).toFixed(1)}kg</div>
           </div>
           <div className="text-center bg-gradient-to-b from-slate-50 to-white rounded-md border border-slate-200/50 px-1.5 py-1.5">
             <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Saldo</div>
-            <div className="font-bold text-slate-900 text-xs leading-tight">{saldo.toFixed(1)}kg</div>
+            <div className="font-bold text-slate-900 text-xs leading-tight">{(saldo || 0).toFixed(1)}kg</div>
           </div>
         </div>
 
@@ -608,7 +608,7 @@ function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: (
                 <div
                   key={bucket.id}
                   className={`px-1.5 py-0.5 rounded text-xs border transition-all duration-200 hover:scale-105 ${color}`}
-                  title={`Balde #${bucket.bucketIndex}: ${bucket.currentQuantityKg.toFixed(2)}kg`}
+                  title={`Balde #${bucket.bucketIndex}: ${(bucket.currentQuantityKg || 0).toFixed(2)}kg`}
                 >
                   #{bucket.bucketIndex}
                 </div>
@@ -717,14 +717,14 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
             <div className="font-semibold text-slate-800 truncate">{item.name}</div>
             <div className="text-[11px] text-slate-600 truncate">OP: {item.op} • Lote: {item.batch}</div>
           </div>
-          <Badge className="bg-white/70 text-slate-700 ring-1 ring-slate-200">Saldo {saldo.toFixed(1)} kg</Badge>
+          <Badge className="bg-white/70 text-slate-700 ring-1 ring-slate-200">Saldo {(saldo || 0).toFixed(1)} kg</Badge>
         </div>
       </div>
       <div className="p-3">
         <div className="mb-2 grid grid-cols-3 gap-2 text-[11px] text-slate-700">
-          <div className="rounded-md bg-slate-50 border border-slate-200 px-2 py-1 text-center">Total<br/><span className="font-semibold text-slate-900">{item.quantity_total.toFixed(1)} kg</span></div>
-          <div className="rounded-md bg-slate-50 border border-slate-200 px-2 py-1 text-center">Envasado<br/><span className="font-semibold text-emerald-700">{item.quantity_envasado.toFixed(1)} kg</span></div>
-          <div className="rounded-md bg-slate-50 border border-slate-200 px-2 py-1 text-center">Saldo<br/><span className="font-semibold text-slate-900">{saldo.toFixed(1)} kg</span></div>
+          <div className="rounded-md bg-slate-50 border border-slate-200 px-2 py-1 text-center">Total<br/><span className="font-semibold text-slate-900">{(item.quantity_total || 0).toFixed(1)} kg</span></div>
+          <div className="rounded-md bg-slate-50 border border-slate-200 px-2 py-1 text-center">Envasado<br/><span className="font-semibold text-emerald-700">{(item.quantity_envasado || 0).toFixed(1)} kg</span></div>
+          <div className="rounded-md bg-slate-50 border border-slate-200 px-2 py-1 text-center">Saldo<br/><span className="font-semibold text-slate-900">{(saldo || 0).toFixed(1)} kg</span></div>
         </div>
 
         <div className="mt-2">
@@ -745,11 +745,11 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
                     key={b.id}
                     onClick={() => toggle(b.id)}
                     className={`px-2.5 py-1.5 rounded-full text-xs border bg-gradient-to-b ${color} ${sel ? 'ring-2 ring-blue-400' : 'hover:shadow-sm'} shadow-[0_1px_0_rgba(0,0,0,0.04)] transition`}
-                    title={`Balde #${b.bucketIndex} • saldo ${b.currentQuantityKg.toFixed(2)}kg`}
+                    title={`Balde #${b.bucketIndex} • saldo ${(b.currentQuantityKg || 0).toFixed(2)}kg`}
                   >
                     <div className="flex items-center gap-1">
                       <span className="font-semibold">#{b.bucketIndex}</span>
-                      <span>{b.currentQuantityKg.toFixed(1)}kg</span>
+                      <span>{(b.currentQuantityKg || 0).toFixed(1)}kg</span>
                     </div>
                     <div className="mt-1 h-1.5 w-24 rounded-full bg-white/50 overflow-hidden">
                       <div 
