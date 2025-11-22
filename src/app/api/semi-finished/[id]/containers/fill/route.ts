@@ -39,7 +39,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     // Usar transação para garantir consistência
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Atualizar os recipientes
+      // 1. Atualizar os recipientes para status 'quarantined' (envase direto para quarentena)
       const updatedContainers = await tx.packagingContainer.updateMany({
         where: {
           id: { in: containerIds },
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         },
         data: {
           currentQuantity: filledQuantity,
-          status: 'filled',
+          status: 'quarantined', // Vai direto para quarentena após envase
           updatedAt: new Date()
         }
       })
@@ -73,7 +73,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         item: updatedItem,
         newSaldo,
         totalFilled,
-        filledQuantity
+        filledQuantity,
+        containerIds,
+        autoQuarantined: true // Indica que foi para quarentena automaticamente
       }
     })
 
@@ -85,7 +87,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         newSaldo: result.newSaldo,
         totalFilled: result.totalFilled,
         filledQuantity: result.filledQuantity,
-        containerIds
+        containerIds,
+        autoQuarantined: result.autoQuarantined
       }
     })
   } catch (error) {

@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Shield, Clock, CheckCircle, Package, AlertTriangle, Loader2, RefreshCw, Send } from 'lucide-react'
-import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, sendBucketsToQuarantine, releaseBucketsFromQuarantine } from '@/lib/semi-finished-lib'
+import { SemiItem, PackagingContainer, semiFinishedFetcher, usePackagingContainers, getSemiFinishedFamilyColor, sendContainersToQuarantine, releaseContainersFromQuarantine } from '@/lib/semi-finished-lib'
 import Link from 'next/link'
 import { subscribeChanges } from '@/lib/bus'
 
@@ -258,16 +258,14 @@ function QuarantineItem({
   onSendToQuarantine: () => void
   onReleaseFromQuarantine: () => void
 }) {
-  const { data: buckets, isLoading, error, mutate: refresh } = useSemiFinishedBuckets(item.id)
+  const { data: containers, isLoading, error, mutate: refresh } = usePackagingContainers(item.id)
   const soft = getSemiFinishedFamilyColor(item.family)
   const selectedIds = Object.keys(selected).filter((k) => selected[k])
 
-  // Filtrar baldes que podem ir para quarentena (status packaged)
-  const bucketsForQuarantine = buckets?.filter(b => b.status === 'packaged') || []
-  // Filtrar baldes em quarentena
-  const bucketsInQuarantine = buckets?.filter(b => b.status === 'quarantine') || []
-  // Filtrar baldes liberados
-  const bucketsReleased = buckets?.filter(b => b.status === 'released') || []
+  // Filtrar recipientes em quarentena
+  const containersInQuarantine = containers?.filter(c => c.status === 'quarantined') || []
+  // Filtrar recipientes liberados
+  const containersReleased = containers?.filter(c => c.status === 'released') || []
 
   return (
     <Card className="bg-white/90 border border-amber-200 shadow-md">
@@ -292,27 +290,28 @@ function QuarantineItem({
         </div>
 
         <div className="space-y-4">
-          {/* Baldes prontos para quarentena */}
-          {bucketsForQuarantine.length > 0 && (
+          {/* Recipientes em quarentena */}
+          {containersInQuarantine.length > 0 && (
             <div>
               <h4 className="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Prontos para Quarentena ({bucketsForQuarantine.length})
+                <AlertTriangle className="w-4 h-4" />
+                Em Quarentena ({containersInQuarantine.length})
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {bucketsForQuarantine.map((bucket) => (
+                {containersInQuarantine.map((container) => (
                   <div
-                    key={bucket.id}
-                    className={`p-2 rounded-lg border cursor-pointer transition-all ${getBucketColor(bucket.status)} ${
-                      selected[bucket.id] ? 'ring-2 ring-amber-400' : ''
+                    key={container.id}
+                    className={`p-2 rounded-lg border cursor-pointer transition-all ${getBucketColor(container.status)} ${
+                      selected[container.id] ? 'ring-2 ring-amber-400' : ''
                     }`}
-                    onClick={() => onToggle(bucket.id)}
+                    onClick={() => onToggle(container.id)}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium">Balde {bucket.bucketIndex}</span>
-                      {getBucketIcon(bucket.status)}
+                      <span className="text-xs font-medium">{container.containerType}</span>
+                      {getBucketIcon(container.status)}
                     </div>
-                    <div className="text-xs">{bucket.currentQuantityKg.toFixed(1)}kg</div>
+                    <div className="text-xs">{container.currentQuantity.toFixed(1)}{container.capacityWeightG ? 'g' : 'ml'}</div>
+                    <div className="text-xs text-amber-600">{container.batchCode}</div>
                   </div>
                 ))}
               </div>
@@ -334,73 +333,33 @@ function QuarantineItem({
             </div>
           )}
 
-          {/* Baldes em quarentena */}
-          {bucketsInQuarantine.length > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-amber-800 mb-2 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
-                Em Quarentena ({bucketsInQuarantine.length})
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {bucketsInQuarantine.map((bucket) => (
-                  <div
-                    key={bucket.id}
-                    className={`p-2 rounded-lg border cursor-pointer transition-all ${getBucketColor(bucket.status)} ${
-                      selected[bucket.id] ? 'ring-2 ring-amber-400' : ''
-                    }`}
-                    onClick={() => onToggle(bucket.id)}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium">Balde {bucket.bucketIndex}</span>
-                      {getBucketIcon(bucket.status)}
-                    </div>
-                    <div className="text-xs">{bucket.currentQuantityKg.toFixed(1)}kg</div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2 mt-2">
-                <Button
-                  size="sm"
-                  disabled={selectedIds.length === 0 || busy !== null}
-                  onClick={onReleaseFromQuarantine}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  {busy === `release-${item.id}` ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-4 h-4" />
-                  )}
-                  Liberar para Expedição
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Baldes liberados */}
-          {bucketsReleased.length > 0 && (
+          {/* Recipientes liberados */}
+          {containersReleased.length > 0 && (
             <div>
               <h4 className="text-sm font-medium text-emerald-800 mb-2 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" />
-                Liberados ({bucketsReleased.length})
+                Liberados ({containersReleased.length})
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {bucketsReleased.map((bucket) => (
+                {containersReleased.map((container) => (
                   <div
-                    key={bucket.id}
-                    className={`p-2 rounded-lg border ${getBucketColor(bucket.status)}`}
+                    key={container.id}
+                    className={`p-2 rounded-lg border cursor-pointer transition-all ${getBucketColor(container.status)}`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium">Balde {bucket.bucketIndex}</span>
-                      {getBucketIcon(bucket.status)}
+                      <span className="text-xs font-medium">{container.containerType}</span>
+                      {getBucketIcon(container.status)}
                     </div>
-                    <div className="text-xs">{bucket.currentQuantityKg.toFixed(1)}kg</div>
+                    <div className="text-xs">{container.currentQuantity.toFixed(1)}{container.capacityWeightG ? 'g' : 'ml'}</div>
+                    <div className="text-xs text-emerald-600">{container.batchCode}</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {bucketsForQuarantine.length === 0 && bucketsInQuarantine.length === 0 && bucketsReleased.length === 0 && (
+          {/* Sem recipientes */}
+          {containersInQuarantine.length === 0 && containersReleased.length === 0 && (
             <div className="text-center py-8 text-amber-600">
               <Package className="w-12 h-12 mx-auto mb-2 text-amber-300" />
               <p>Nenhum balde encontrado para este produto</p>

@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Send, PackageCheck, Undo2, Loader2, Trash2, Settings2, Layers, Droplet, TrendingUp, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, Package, Clock, Brain, AlertTriangle } from 'lucide-react'
-import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, deleteSemiFinished, createSemiFinished, packageBucket as apiPackageBucket, returnBucket as apiReturnBucket, sendBucketsToPackaging, sendBucketsToQuarantine, releaseBucketsFromQuarantine } from '@/lib/semi-finished-lib'
+import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, deleteSemiFinished, createSemiFinished, packageBucket as apiPackageBucket, returnBucket as apiReturnBucket, sendBucketsToPackaging, sendBucketsToQuarantine, releaseBucketsFromQuarantine, generatePackagingContainers } from '@/lib/semi-finished-lib'
+import { getFamilyContainers, calculateContainersNeeded } from '@/lib/family-config'
 import Link from 'next/link'
 import { subscribeChanges } from '@/lib/bus'
 
@@ -739,18 +740,51 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
   }
 
   const packageBucket = async () => {
-    const id = selectedIds[0]
-    if (!id) return
-    const v = prompt('Quantidade (kg) a envasar neste balde:', '18')
-    if (!v) return
-    const delta = Number(v)
-    if (!Number.isFinite(delta) || delta <= 0) return
+    // Para o novo sistema, vamos criar recipientes e envasar automaticamente
+    const { family } = item
+    
+    // Obter recipientes disponíveis para esta família
+    const familyContainers = getFamilyContainers(family)
+    if (familyContainers.length === 0) {
+      alert(`Nenhum recipiente disponível para a família ${family}`)
+      return
+    }
+    
+    // Selecionar automaticamente o primeiro tipo de recipiente
+    const selectedContainer = familyContainers[0]
+    
+    // Calcular quantidade de recipientes necessários
+    const containersNeeded = calculateContainersNeeded(family, selectedContainer.id, Number(item.quantity_total))
+    
+    if (!confirm(`Gerar ${containersNeeded} recipientes (${selectedContainer.name}) e envasar automaticamente? Os produtos irão direto para quarentena.`)) {
+      return
+    }
+    
     setBusy('package')
     
     try {
-      const result = await apiPackageBucket(id, delta)
-      if (!result.success) {
-        alert(`Erro ao envasar: ${result.error}`)
+      // 1. Gerar recipientes
+      const generateResult = await generatePackagingContainers(item.id, selectedContainer.id, containersNeeded)
+      if (!generateResult.success) {
+        alert(`Erro ao gerar recipientes: ${generateResult.error}`)
+        return
+      }
+      
+      const containerIds = generateResult.data?.map(c => c.id) || []
+      
+      // 2. Preencher recipientes (envase automático para quarentena)
+      const fillResult = await fetch(`/api/semi-finished/${item.id}/containers/fill`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          containerIds, 
+          filledQuantity: selectedContainer.capacityWeightG || selectedContainer.capacityMl 
+        })
+      })
+      
+      const fillData = await fillResult.json()
+      if (!fillData.success) {
+        alert(`Erro ao envasar recipientes: ${fillData.error}`)
         return
       }
       
@@ -758,14 +792,17 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
       await Promise.all([refresh(), mutate('/api/semi-finished')])
       setSelected({})
       
-      // Mostrar dados atualizados
-      if (result.data) {
-        const { newQty, status, newEnvasado, newSaldo, deltaKg } = result.data
-        alert(`✅ Envase registrado!\nEnvasado: ${deltaKg}kg\nSaldo do balde: ${newQty}kg\nTotal envasado: ${newEnvasado}kg\nSaldo da OP: ${newSaldo}kg`)
-      }
+      // Redirecionar automaticamente para quarentena
+      alert(`✅ ${containerIds.length} recipientes envasados e enviados para quarentena! Redirecionando...`)
+      
+      // Redirecionar para página de quarentena
+      setTimeout(() => {
+        window.location.href = '/quarantine'
+      }, 1500)
+      
     } catch (error) {
-      console.error('Erro ao envasar balde:', error)
-      alert('Erro ao envasar balde. Tente novamente.')
+      console.error('Erro ao envasar:', error)
+      alert('Erro ao envasar recipientes. Tente novamente.')
     } finally {
       setBusy(null)
     }
@@ -932,12 +969,6 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
             </Button>
             <Button size="sm" variant="ghost" disabled={selectedIds.length !== 1 || !!busy} onClick={returnBucket} className="border border-slate-300 hover:bg-slate-50" title="Devolver balde para o estoque de Semi‑Acabados">
               {busy === 'return' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Undo2 className="h-3.5 w-3.5 mr-1" />} Devolver
-            </Button>
-            <Button size="sm" variant="secondary" disabled={!selectedIds.length || !!busy} onClick={sendToQuarantine} className="bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow" title="Enviar baldes envasados para quarentena">
-              {busy === 'quarantine' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Shield className="h-3.5 w-3.5 mr-1" />} Quarentena
-            </Button>
-            <Button size="sm" variant="secondary" disabled={!selectedIds.length || !!busy} onClick={releaseFromQuarantine} className="bg-gradient-to-b from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow" title="Liberar baldes da quarentena para expedição">
-              {busy === 'release' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <AlertTriangle className="h-3.5 w-3.5 mr-1" />} Liberar
             </Button>
           </div>
           <Button
