@@ -23,7 +23,7 @@ export interface Bucket {
   bucketIndex: number
   originalQuantityKg: number
   currentQuantityKg: number
-  status: 'packaged' | 'partial' | 'in_packaging' | 'returned' | 'available'
+  status: 'packaged' | 'partial' | 'in_packaging' | 'returned' | 'available' | 'quarantine' | 'released'
   semiFinishedId: string
 }
 
@@ -233,6 +233,58 @@ export async function returnBucket(bucketId: string): Promise<{ success: boolean
     
     if (!response.ok || !data.success) {
       return { success: false, error: data.error || 'Failed to return bucket' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+}
+
+/**
+ * Envia baldes para quarentena
+ */
+export async function sendBucketsToQuarantine(semiFinishedId: string, bucketIds: string[]): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/semi-finished/${semiFinishedId}/quarantine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bucketIds })
+    })
+
+    const data = await response.json()
+    
+    if (!response.ok || !data.success) {
+      return { success: false, error: data.error || 'Failed to send buckets to quarantine' }
+    }
+
+    return { success: true }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+}
+
+/**
+ * Libera baldes da quarentena para expedição
+ */
+export async function releaseBucketsFromQuarantine(semiFinishedId: string, bucketIds: string[]): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/semi-finished/${semiFinishedId}/release`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bucketIds })
+    })
+
+    const data = await response.json()
+    
+    if (!response.ok || !data.success) {
+      return { success: false, error: data.error || 'Failed to release buckets from quarantine' }
     }
 
     return { success: true }

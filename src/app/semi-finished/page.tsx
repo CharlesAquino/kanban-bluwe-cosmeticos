@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Send, PackageCheck, Undo2, Loader2, Trash2, Settings2, Layers, Droplet, TrendingUp, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, Package, Clock, Brain } from 'lucide-react'
-import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, deleteSemiFinished, createSemiFinished, packageBucket as apiPackageBucket, returnBucket as apiReturnBucket, sendBucketsToPackaging } from '@/lib/semi-finished-lib'
+import { Send, PackageCheck, Undo2, Loader2, Trash2, Settings2, Layers, Droplet, TrendingUp, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, Package, Clock, Brain, AlertTriangle } from 'lucide-react'
+import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, deleteSemiFinished, createSemiFinished, packageBucket as apiPackageBucket, returnBucket as apiReturnBucket, sendBucketsToPackaging, sendBucketsToQuarantine, releaseBucketsFromQuarantine } from '@/lib/semi-finished-lib'
 import Link from 'next/link'
 import { subscribeChanges } from '@/lib/bus'
 
@@ -271,6 +271,17 @@ Formato: Use títulos claros, linguagem direta e foco em ações práticas.`
                       <div className="flex flex-col">
                         <span className="font-medium text-sm">Semi acabados</span>
                         <span className="text-xs text-slate-500">Visão geral semi-acabados</span>
+                      </div>
+                    </Link>
+                    <Link
+                      href="/quarantine"
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
+                      onClick={() => setOverviewDropdownOpen(false)}
+                    >
+                      <Shield className="h-4 w-4 text-slate-500" />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">Quarentena</span>
+                        <span className="text-xs text-slate-500">Controle de qualidade pós-envase</span>
                       </div>
                     </Link>
                   </div>
@@ -638,6 +649,8 @@ function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: (
               const color = bucket.status === 'packaged' ? 'bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-800 border-emerald-200 hover:from-emerald-200 hover:to-emerald-100' :
                            bucket.status === 'partial' ? 'bg-gradient-to-r from-amber-100 to-amber-50 text-amber-800 border-amber-200 hover:from-amber-200 hover:to-amber-100' :
                            bucket.status === 'in_packaging' ? 'bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border-blue-200 hover:from-blue-200 hover:to-blue-100' :
+                           bucket.status === 'quarantine' ? 'bg-gradient-to-r from-orange-100 to-orange-50 text-orange-800 border-orange-200 hover:from-orange-200 hover:to-orange-100' :
+                           bucket.status === 'released' ? 'bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 border-purple-200 hover:from-purple-200 hover:to-purple-100' :
                            'bg-gradient-to-r from-slate-100 to-white text-slate-700 border-slate-200 hover:from-slate-200 hover:to-slate-50'
               return (
                 <div
@@ -676,7 +689,7 @@ function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: (
 function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }) {
   const { data: buckets, isLoading: loading, error, mutate: refresh } = useSemiFinishedBuckets(item.id)
   const [selected, setSelected] = useState<Record<string, boolean>>({})
-  const [busy, setBusy] = useState<null | 'send' | 'package' | 'return' | 'delete'>(null)
+  const [busy, setBusy] = useState<null | 'send' | 'package' | 'return' | 'delete' | 'quarantine' | 'release'>(null)
 
   const toggle = (id: string) => setSelected((s) => ({ ...s, [id]: !s[id] }))
   const selectedIds = Object.keys(selected).filter((k) => selected[k])
@@ -783,6 +796,74 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
     }
   }
 
+  const sendToQuarantine = async () => {
+    // Apenas baldes com status 'packaged' podem ir para quarentena
+    const packagedBuckets = selectedIds.filter(id => {
+      const bucket = buckets?.find(b => b.id === id)
+      return bucket?.status === 'packaged'
+    })
+    
+    if (packagedBuckets.length === 0) {
+      alert('Selecione apenas baldes já envasados (status verde) para enviar para quarentena.')
+      return
+    }
+    
+    if (!confirm(`Enviar ${packagedBuckets.length} balde(s) para quarentena?`)) return
+    setBusy('quarantine')
+    
+    try {
+      const result = await sendBucketsToQuarantine(item.id, packagedBuckets)
+      if (!result.success) {
+        alert(`Erro ao enviar para quarentena: ${result.error}`)
+        return
+      }
+      
+      // Atualizar dados em tempo real
+      await Promise.all([refresh(), mutate('/api/semi-finished')])
+      setSelected({})
+      alert(`✅ ${packagedBuckets.length} balde(s) enviado(s) para quarentena!`)
+    } catch (error) {
+      console.error('Erro ao enviar para quarentena:', error)
+      alert('Erro ao enviar baldes para quarentena. Tente novamente.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const releaseFromQuarantine = async () => {
+    // Apenas baldes com status 'quarantine' podem ser liberados
+    const quarantineBuckets = selectedIds.filter(id => {
+      const bucket = buckets?.find(b => b.id === id)
+      return bucket?.status === 'quarantine'
+    })
+    
+    if (quarantineBuckets.length === 0) {
+      alert('Selecione apenas baldes em quarentena (status laranja) para liberar.')
+      return
+    }
+    
+    if (!confirm(`Liberar ${quarantineBuckets.length} balde(s) da quarentena para expedição?`)) return
+    setBusy('release')
+    
+    try {
+      const result = await releaseBucketsFromQuarantine(item.id, quarantineBuckets)
+      if (!result.success) {
+        alert(`Erro ao liberar da quarentena: ${result.error}`)
+        return
+      }
+      
+      // Atualizar dados em tempo real
+      await Promise.all([refresh(), mutate('/api/semi-finished')])
+      setSelected({})
+      alert(`✅ ${quarantineBuckets.length} balde(s) liberado(s) para expedição!`)
+    } catch (error) {
+      console.error('Erro ao liberar da quarentena:', error)
+      alert('Erro ao liberar baldes da quarentena. Tente novamente.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
   const saldo = useMemo(() => Number(item.quantity_total) - Number(item.quantity_envasado), [item.quantity_total, item.quantity_envasado])
   const soft = getSemiFinishedFamilyColor(item.family)
 
@@ -851,6 +932,12 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
             </Button>
             <Button size="sm" variant="ghost" disabled={selectedIds.length !== 1 || !!busy} onClick={returnBucket} className="border border-slate-300 hover:bg-slate-50" title="Devolver balde para o estoque de Semi‑Acabados">
               {busy === 'return' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Undo2 className="h-3.5 w-3.5 mr-1" />} Devolver
+            </Button>
+            <Button size="sm" variant="secondary" disabled={!selectedIds.length || !!busy} onClick={sendToQuarantine} className="bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow" title="Enviar baldes envasados para quarentena">
+              {busy === 'quarantine' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Shield className="h-3.5 w-3.5 mr-1" />} Quarentena
+            </Button>
+            <Button size="sm" variant="secondary" disabled={!selectedIds.length || !!busy} onClick={releaseFromQuarantine} className="bg-gradient-to-b from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow" title="Liberar baldes da quarentena para expedição">
+              {busy === 'release' ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <AlertTriangle className="h-3.5 w-3.5 mr-1" />} Liberar
             </Button>
           </div>
           <Button
