@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Send, PackageCheck, Undo2, Loader2, Trash2, Settings2, Layers, Droplet, TrendingUp, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, Package, Clock, Brain } from 'lucide-react'
-import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, deleteSemiFinished } from '@/lib/semi-finished-lib'
+import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, deleteSemiFinished, createSemiFinished } from '@/lib/semi-finished-lib'
 import Link from 'next/link'
 
 export default function SemiFinishedPage() {
@@ -123,15 +123,29 @@ Formato: Use títulos claros, linguagem direta e foco em ações práticas.`
     try {
       setLegacyBusy(true)
       setLegacyError(null)
+
       const qty = Number(legacyQty)
       if (!Number.isFinite(qty) || qty <= 0) {
         setLegacyError('Quantidade inválida')
         setLegacyBusy(false)
         return
       }
-      console.log('📦 handleLegacyInsert: Mock operation para GitHub Pages')
-      // Mock operation
-      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const result = await createSemiFinished({
+        productId: `legacy-${legacyOp}-${legacyBatch}`,
+        name: legacyName,
+        family: legacyFamily,
+        op: legacyOp,
+        batch: legacyBatch,
+        quantity_total: qty,
+      })
+
+      if (!result.success) {
+        setLegacyError(result.error || 'Erro ao inserir produto legado')
+        setLegacyBusy(false)
+        return
+      }
+
       await mutate('/api/semi-finished')
       setLegacyName('')
       setLegacyFamily('')
