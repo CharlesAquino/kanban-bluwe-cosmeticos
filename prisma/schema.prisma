@@ -79,7 +79,7 @@ model Product {
 
 model SemiFinishedItem {
   id               String   @id @default(cuid())
-  productId        String
+  productId        String?
   product          Product? @relation(fields: [productId], references: [id])
   name             String
   family           String   @default("Sem Família")

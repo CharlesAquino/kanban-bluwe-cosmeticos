@@ -60,11 +60,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const semiProductId = productId || `legacy-${normalizedOp}-${normalizedBatch}`
-
     const created = await prisma.semiFinishedItem.create({
       data: {
-        productId: semiProductId,
+        productId: productId ? String(productId) : null,
         name: String(name).trim(),
         family: String(family).trim() || 'Sem Família',
         op: normalizedOp,
