@@ -78,18 +78,6 @@ export async function advanceProductStage(params: AdvanceStageParams): Promise<P
       return { success: false, error: data.error || 'Erro ao avançar estágio', details: data.details }
     }
 
-    // Notificar monitoramento sobre avanço de estágio
-    if (data.data) {
-      notifyProcessMonitor({
-        productId: params.productId,
-        productName: data.data.name,
-        action: 'stage_advance',
-        fromStage: data.data.currentStage,
-        toStage: params.nextStage,
-        timestamp: new Date().toISOString()
-      })
-    }
-
     return { success: true, data: data.data }
   } catch (error) {
     console.error('❌ advanceProductStage error:', error)
@@ -229,30 +217,5 @@ export async function deleteProduct(productId: string): Promise<ProductOperation
       success: false, 
       error: error instanceof Error ? error.message : 'Erro desconhecido ao deletar produto' 
     }
-  }
-}
-
-/**
- * Notifica o sistema de monitoramento de processos
- */
-interface ProcessMonitorNotification {
-  productId: string
-  productName: string
-  action: 'stage_advance' | 'finalize' | 'pause' | 'resume' | 'block'
-  fromStage?: ProductStage
-  toStage?: ProductStage
-  timestamp: string
-}
-
-async function notifyProcessMonitor(notification: ProcessMonitorNotification): Promise<void> {
-  try {
-    await apiFetch('/api/process-monitor/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(notification)
-    })
-  } catch (error) {
-    // Não falhar a operação principal se o monitoramento falhar
-    console.warn('⚠️ Could not notify process monitor:', error)
   }
 }
