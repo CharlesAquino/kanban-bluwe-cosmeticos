@@ -65,6 +65,8 @@ model Product {
   createdById   String
   updatedById   String?
 
+  semiFinishedItems SemiFinishedItem[]
+
   @@index([op])
   @@index([batch])
   @@index([currentStage])
@@ -72,4 +74,39 @@ model Product {
   @@index([createdById])
   @@index([priority])
   @@map("products")
+}
+
+model SemiFinishedItem {
+  id               String   @id @default(cuid())
+  productId        String
+  product          Product? @relation(fields: [productId], references: [id])
+  name             String
+  family           String   @default("Sem Família")
+  op               String
+  batch            String
+  quantityTotal    Float
+  quantityEnvasado Float   @default(0)
+  status           String   @default("aguardando")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  buckets SemiFinishedBucket[]
+
+  @@index([op, batch])
+  @@map("semi_finished_items")
+}
+
+model SemiFinishedBucket {
+  id                String   @id @default(cuid())
+  semiFinishedId    String
+  semiFinished      SemiFinishedItem @relation(fields: [semiFinishedId], references: [id])
+  sourceBucketId    String
+  bucketIndex       Int
+  originalQuantityKg Float
+  currentQuantityKg  Float
+  status            String   @default("moved_to_semi")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("semi_finished_buckets")
 }

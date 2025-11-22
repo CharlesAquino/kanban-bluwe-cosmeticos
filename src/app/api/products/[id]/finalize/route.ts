@@ -2,21 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-import { getDb } from '@/lib/db'
-import { enqueue } from '@/agents/dispatcher'
-const db = getDb()
-
-interface Product {
-  id: string
-  name: string
-  op: string
-  batch: string
-  quantity: number
-  currentStage: string
-  status: string
-  createdAt: string
-  updatedAt: string
-}
+import { prisma } from '@/lib/prisma'
 
 export async function POST(
   _request: NextRequest,
@@ -24,11 +10,14 @@ export async function POST(
 ) {
   try {
     const { id } = params
-    // Família passa a vir do produto
 
-    // Buscar produto no banco SQLite principal (tabela products)
-    const selectProduct = db.prepare('SELECT * FROM products WHERE id = ? LIMIT 1')
-    const product = selectProduct.get(id) as Product | undefined
+    console.log('=== API FINALIZE: Finalizando produto ===')
+    console.log('Produto ID:', id)
+
+    // Buscar produto no PostgreSQL via Prisma
+    const product = await prisma.product.findUnique({
+      where: { id },
+    })
 
     if (!product) {
       return NextResponse.json({ success: false, error: 'Produto não encontrado' }, { status: 404 })
@@ -38,86 +27,58 @@ export async function POST(
     if (stage !== 'APROVADO' && stage !== 'FINALIZADO') {
       return NextResponse.json(
         { success: false, error: 'Produto ainda não está no estágio Aprovado' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
     // Verificar se já existe Semi-Acabado com mesma OP + Lote
-    const dupCheck = db.prepare('SELECT id FROM semi_finished_items WHERE op = ? AND batch = ? LIMIT 1')
-    const existingSfi = dupCheck.get(product.op, product.batch) as { id: string } | undefined
+    const existingSfi = await prisma.semiFinishedItem.findFirst({
+      where: {
+        op: product.op,
+        batch: product.batch,
+      },
+    })
+
     if (existingSfi) {
       return NextResponse.json(
         { success: false, error: 'Já existe um produto de Semi-Acabados com esta OP e lote.' },
-        { status: 400 }
+        { status: 400 },
       )
     }
 
-    // Criar item de semi-acabado
-    const now = new Date().toISOString()
-    const sfi = {
-      id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
-      productId: product.id,
-      name: product.name,
-      family: (product as any).family || 'Sem Família',
-      op: product.op,
-      batch: product.batch,
-      quantity_total: product.quantity,
-      quantity_envasado: 0,
-      status: 'aguardando',
-      createdAt: now,
-      updatedAt: now,
-    }
+    // Criar item de semi-acabado e remover produto do kanban de produção
+    const semiFinished = await prisma.$transaction(async (tx) => {
+      const created = await tx.semiFinishedItem.create({
+        data: {
+          productId: product.id,
+          name: product.name,
+          family: 'Sem Família',
+          op: product.op,
+          batch: product.batch,
+          quantityTotal: product.quantity,
+          // quantityEnvasado permanece 0 por padrão
+          status: 'aguardando',
+        },
+      })
 
-    const insertSfi = db.prepare(`
-      INSERT INTO semi_finished_items (id, productId, name, family, op, batch, quantity_total, quantity_envasado, status, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
+      // Remover produto da tabela de produção (equivalente ao DELETE no SQLite)
+      await tx.product.delete({
+        where: { id: product.id },
+      })
 
-    insertSfi.run(
-      sfi.id,
-      sfi.productId,
-      sfi.name,
-      sfi.family,
-      sfi.op,
-      sfi.batch,
-      sfi.quantity_total,
-      sfi.quantity_envasado,
-      sfi.status,
-      sfi.createdAt,
-      sfi.updatedAt,
-    )
+      return created
+    })
 
-    // Copiar baldes do produto para semi_finished_buckets
-    try {
-      const selectBuckets = db.prepare('SELECT * FROM product_buckets WHERE productId = ? ORDER BY bucketIndex ASC')
-      const buckets = selectBuckets.all(product.id) as Array<{
-        id: string; bucketIndex: number; originalQuantityKg: number; currentQuantityKg: number
-      }>
-      if (buckets && buckets.length) {
-        const insertSfb = db.prepare(`
-          INSERT INTO semi_finished_buckets (id, semiFinishedId, sourceBucketId, bucketIndex, originalQuantityKg, currentQuantityKg, status, createdAt, updatedAt)
-          VALUES (?, ?, ?, ?, ?, ?, 'moved_to_semi', ?, ?)
-        `)
-        for (const b of buckets) {
-          const sid = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
-          insertSfb.run(sid, sfi.id, b.id, b.bucketIndex, b.originalQuantityKg, b.currentQuantityKg, now, now)
-        }
-      }
-    } catch (e) {
-      // log suave, não falha a operação
-      console.warn('Falha ao copiar baldes para semi_finished_buckets', e)
-    }
+    console.log('Semi-acabado criado:', semiFinished)
 
-    // Remover produto do kanban de produção
-    const del = db.prepare('DELETE FROM products WHERE id = ?')
-    del.run(product.id)
-
-    // Disparar evento para o agente (não bloqueante)
-    try { enqueue({ type: 'finalize', payload: { semiFinishedId: sfi.id, productId: product.id } }) } catch {}
-
-    return NextResponse.json({ success: true, data: sfi }, { status: 201 })
+    return NextResponse.json({ success: true, data: semiFinished }, { status: 201 })
   } catch (error) {
+    console.error('=== API FINALIZE: ERRO ===')
+    console.error('Erro ao finalizar produto:', error)
     const message = error instanceof Error ? error.message : 'Erro desconhecido'
-    return NextResponse.json({ success: false, error: 'Erro interno do servidor', details: message }, { status: 500 })
+    return NextResponse.json(
+      { success: false, error: 'Erro interno do servidor', details: message },
+      { status: 500 },
+    )
   }
 }
