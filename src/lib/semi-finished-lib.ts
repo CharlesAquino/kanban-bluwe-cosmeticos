@@ -15,6 +15,7 @@ export interface SemiItem {
   quantity_total: number
   quantity_envasado: number
   status: string
+  manufacturingDate: string // ISO date string
 }
 
 export interface Bucket {
@@ -33,6 +34,7 @@ export interface CreateSemiParams {
   op: string
   batch: string
   quantity_total: number
+  manufacturingDate?: string // ISO date string - opcional, usa data atual se não informado
 }
 
 export interface UpdateSemiParams {

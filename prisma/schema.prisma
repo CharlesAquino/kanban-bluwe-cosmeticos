@@ -60,6 +60,7 @@ model Product {
   dueDate       DateTime?
   notes         String?
   image         String?  // URL da imagem do produto
+  manufacturingDate DateTime @default(now()) // Data de fabricação
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   createdById   String
@@ -88,6 +89,7 @@ model SemiFinishedItem {
   quantityTotal    Float
   quantityEnvasado Float   @default(0)
   status           String   @default("aguardando")
+  manufacturingDate DateTime @default(now()) // Data de fabricação (para controle de vencimento)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

@@ -58,6 +58,7 @@ export async function POST(
           quantityTotal: product.quantity,
           // quantityEnvasado permanece 0 por padrão
           status: 'aguardando',
+          manufacturingDate: product.manufacturingDate || new Date(),
         },
       })
 

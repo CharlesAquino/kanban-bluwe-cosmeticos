@@ -25,7 +25,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { productId, name, family, op, batch, quantity_total } = body || {}
+    const { productId, name, family, op, batch, quantity_total, manufacturingDate } = body || {}
 
     if (!name || !family || !op || !batch || !quantity_total) {
       return NextResponse.json(
@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
         quantityTotal: qtyTotal,
         quantityEnvasado: 0,
         status: 'aguardando',
+        manufacturingDate: manufacturingDate ? new Date(manufacturingDate) : new Date(),
       },
     })
 

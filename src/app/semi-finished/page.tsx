@@ -31,6 +31,7 @@ export default function SemiFinishedPage() {
   const [legacyOp, setLegacyOp] = useState('')
   const [legacyBatch, setLegacyBatch] = useState('')
   const [legacyQty, setLegacyQty] = useState('')
+  const [legacyManufacturingDate, setLegacyManufacturingDate] = useState('')
   const [legacyBusy, setLegacyBusy] = useState(false)
   const [legacyError, setLegacyError] = useState<string | null>(null)
 
@@ -137,6 +138,7 @@ Formato: Use títulos claros, linguagem direta e foco em ações práticas.`
         op: legacyOp,
         batch: legacyBatch,
         quantity_total: qty,
+        manufacturingDate: legacyManufacturingDate || new Date().toISOString().split('T')[0],
       })
 
       if (!result.success) {
@@ -151,6 +153,7 @@ Formato: Use títulos claros, linguagem direta e foco em ações práticas.`
       setLegacyOp('')
       setLegacyBatch('')
       setLegacyQty('')
+      setLegacyManufacturingDate('')
     } catch (e) {
       setLegacyError('Erro ao inserir produto legado')
     } finally {
@@ -401,11 +404,23 @@ Formato: Use títulos claros, linguagem direta e foco em ações práticas.`
                 <p className="text-[11px] uppercase tracking-[0.3em] text-sky-600/80">Produtos legados</p>
                 <h2 className="text-lg font-semibold text-slate-900">Adicionar item existente</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
                 <LegacyInput id="legacy-name" label="Nome" value={legacyName} onChange={setLegacyName} placeholder="Nome do produto" />
                 <LegacyInput id="legacy-family" label="Família" value={legacyFamily} onChange={setLegacyFamily} placeholder="Linha / família" />
                 <LegacyInput id="legacy-op" label="OP" value={legacyOp} onChange={setLegacyOp} placeholder="OP" />
                 <LegacyInput id="legacy-batch" label="Lote" value={legacyBatch} onChange={setLegacyBatch} placeholder="Lote" />
+                <div className="space-y-1">
+                  <Label htmlFor="legacy-date" className="text-xs text-slate-600">
+                    Data Fab.
+                  </Label>
+                  <Input
+                    id="legacy-date"
+                    type="date"
+                    value={legacyManufacturingDate}
+                    onChange={(e) => setLegacyManufacturingDate(e.target.value)}
+                    className="h-9 text-xs bg-white border border-slate-200 text-slate-900"
+                  />
+                </div>
                 <div className="space-y-1">
                   <Label htmlFor="legacy-qty" className="text-xs text-slate-600">
                     Qtd (kg)
