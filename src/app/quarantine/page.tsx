@@ -75,6 +75,19 @@ export default function QuarantinePage() {
     }
   }
 
+  const getBucketIcon = (status: string) => {
+    switch (status) {
+      case 'quarantine':
+        return <AlertTriangle className="w-3 h-3" />
+      case 'released':
+        return <CheckCircle className="w-3 h-3" />
+      case 'packaged':
+        return <Package className="w-3 h-3" />
+      default:
+        return <Clock className="w-3 h-3" />
+    }
+  }
+
   const releaseFromQuarantine = async (itemId: string) => {
     const selectedBuckets = Object.keys(selected[itemId] || {}).filter(id => selected[itemId][id])
     if (selectedBuckets.length === 0) return
@@ -110,19 +123,6 @@ export default function QuarantinePage() {
         return 'bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 border-blue-200'
       default:
         return 'bg-gradient-to-r from-slate-100 to-white text-slate-700 border-slate-200'
-    }
-  }
-
-  const getBucketIcon = (status: string) => {
-    switch (status) {
-      case 'quarantine':
-        return <AlertTriangle className="w-3 h-3" />
-      case 'released':
-        return <CheckCircle className="w-3 h-3" />
-      case 'packaged':
-        return <Package className="w-3 h-3" />
-      default:
-        return <Clock className="w-3 h-3" />
     }
   }
 
