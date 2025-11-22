@@ -2,29 +2,37 @@ import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-import { getDb } from '@/lib/db'
-import { enqueue } from '@/agents/dispatcher'
-const db = getDb()
+import { prisma } from '@/lib/prisma'
 
 export async function POST(_request: NextRequest, { params }: { params: { bucketId: string } }) {
   try {
-    const bucketStmt = db.prepare('SELECT * FROM semi_finished_buckets WHERE id = ?')
-    const bucket = bucketStmt.get(params.bucketId) as any
-    if (!bucket) return NextResponse.json({ success: false, error: 'Balde não encontrado' }, { status: 404 })
+    // Buscar o balde
+    const bucket = await prisma.semiFinishedBucket.findUnique({
+      where: { id: params.bucketId }
+    })
 
-    const now = new Date().toISOString()
-    const upd = db.prepare(`UPDATE semi_finished_buckets SET status = 'returned', updatedAt = ? WHERE id = ?`)
-    upd.run(now, params.bucketId)
+    if (!bucket) {
+      return NextResponse.json({ success: false, error: 'Balde não encontrado' }, { status: 404 })
+    }
 
-    const log = db.prepare(`INSERT INTO packaging_logs (id, semiFinishedId, semiFinishedBucketId, action, timestamp) VALUES (?, ?, ?, 'returned', ?)`)
-    const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
-    log.run(id, bucket.semiFinishedId, params.bucketId, now)
+    // Atualizar status para 'returned'
+    const updatedBucket = await prisma.semiFinishedBucket.update({
+      where: { id: params.bucketId },
+      data: {
+        status: 'returned',
+        updatedAt: new Date()
+      }
+    })
 
-    // Disparar evento para o agente (não bloqueante)
-    try { enqueue({ type: 'return', payload: { bucketId: params.bucketId, semiFinishedId: bucket.semiFinishedId } }) } catch {}
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ 
+      success: true, 
+      data: { 
+        bucketId: updatedBucket.id,
+        status: updatedBucket.status
+      }
+    })
   } catch (error) {
+    console.error('Erro ao devolver balde:', error)
     const message = error instanceof Error ? error.message : 'Erro desconhecido'
     return NextResponse.json({ success: false, error: 'Erro interno do servidor', details: message }, { status: 500 })
   }

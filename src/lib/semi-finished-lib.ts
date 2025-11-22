@@ -172,7 +172,7 @@ export async function deleteSemiFinished(id: string): Promise<{ success: boolean
  */
 export async function sendBucketsToPackaging(semiFinishedId: string, bucketIds: string[]): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch(`/api/semi-finished/${semiFinishedId}/send-to-packaging`, {
+    const response = await fetch(`/api/semi-finished/${semiFinishedId}/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bucketIds })
@@ -196,12 +196,12 @@ export async function sendBucketsToPackaging(semiFinishedId: string, bucketIds: 
 /**
  * Registra envase de balde
  */
-export async function packageBucket(semiFinishedId: string, bucketId: string, packagedQuantity: number): Promise<{ success: boolean; error?: string }> {
+export async function packageBucket(bucketId: string, deltaKg: number): Promise<{ success: boolean; error?: string; data?: any }> {
   try {
-    const response = await fetch(`/api/semi-finished/${semiFinishedId}/package-bucket`, {
+    const response = await fetch(`/api/semi-finished/buckets/${bucketId}/package`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bucketId, packagedQuantity })
+      body: JSON.stringify({ deltaKg })
     })
 
     const data = await response.json()
@@ -210,7 +210,7 @@ export async function packageBucket(semiFinishedId: string, bucketId: string, pa
       return { success: false, error: data.error || 'Failed to package bucket' }
     }
 
-    return { success: true }
+    return { success: true, data: data.data }
   } catch (error) {
     return { 
       success: false, 
@@ -222,12 +222,11 @@ export async function packageBucket(semiFinishedId: string, bucketId: string, pa
 /**
  * Retorna balde para estoque
  */
-export async function returnBucket(semiFinishedId: string, bucketId: string): Promise<{ success: boolean; error?: string }> {
+export async function returnBucket(bucketId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch(`/api/semi-finished/${semiFinishedId}/return-bucket`, {
+    const response = await fetch(`/api/semi-finished/buckets/${bucketId}/return`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bucketId })
+      headers: { 'Content-Type': 'application/json' }
     })
 
     const data = await response.json()
