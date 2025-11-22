@@ -103,6 +103,8 @@ export default function AnaliseOperadorPage() {
               value={selectedPeriod} 
               onChange={(e) => setSelectedPeriod(e.target.value)}
               className="px-3 py-1.5 rounded-lg border border-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Selecionar período de análise"
+              title="Selecionar período de análise"
             >
               {periodOptions.map(option => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -115,6 +117,8 @@ export default function AnaliseOperadorPage() {
               value={selectedOperator} 
               onChange={(e) => setSelectedOperator(e.target.value)}
               className="px-3 py-1.5 rounded-lg border border-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Selecionar operador específico"
+              title="Selecionar operador específico"
             >
               <option value="all">Todos</option>
               {operatorsData.map(operator => (
