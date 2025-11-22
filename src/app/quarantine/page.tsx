@@ -14,7 +14,7 @@ export default function QuarantinePage() {
   const [selected, setSelected] = useState<Record<string, Record<string, boolean>>>({})
   const [busy, setBusy] = useState<string | null>(null)
 
-  const { data: items, error, isLoading, mutate } = useSWR<SemiItem[]>('/api/semi-finished', semiFinishedFetcher, {
+  const { data: items, error, isLoading, mutate } = useSWR<SemiItem[]>('/api/quarantine', semiFinishedFetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     refreshInterval: 15000,
@@ -30,15 +30,8 @@ export default function QuarantinePage() {
     return () => unsub()
   }, [mutate])
 
-  // Filtrar apenas itens com recipientes em quarentena
-  const itemsWithQuarantine = useMemo(() => {
-    if (!items) return []
-    return items.filter(item => {
-      // Verificar se há recipientes em quarentena para este item
-      // Por enquanto, mostramos todos os itens envasados
-      return item.quantity_envasado > 0
-    })
-  }, [items])
+  // API já retorna apenas itens em quarentena
+  const itemsWithQuarantine = items || []
 
   // Calcular estatísticas reais de recipientes
   const quarantineStats = useMemo(() => {

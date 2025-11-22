@@ -8,6 +8,11 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const items = await prisma.semiFinishedItem.findMany({
+      where: {
+        status: {
+          not: 'QUARENTENA' // Excluir produtos em quarentena
+        }
+      },
       orderBy: { updatedAt: 'desc' },
     })
 

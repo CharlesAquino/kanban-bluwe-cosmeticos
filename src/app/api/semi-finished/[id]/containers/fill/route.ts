@@ -61,6 +61,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
           quantityEnvasado: {
             increment: totalFilled / 1000 // Converter para kg
           },
+          // Se não há mais saldo, mover para quarentena
+          status: {
+            set: 'QUARENTENA' // Muda status para não aparecer mais em semi-acabados
+          },
           updatedAt: new Date()
         }
       })

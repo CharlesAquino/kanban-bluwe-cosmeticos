@@ -793,7 +793,7 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
       setSelected({})
       
       // Redirecionar automaticamente para quarentena
-      alert(`✅ ${containerIds.length} recipientes envasados e enviados para quarentena! Redirecionando...`)
+      alert(`✅ ${containerIds.length} recipientes envasados e enviados para quarentena!\n\n⚠️ Esta OP não aparecerá mais na lista de Semi-Acabados e foi movida para a Quarentena. Redirecionando...`)
       
       // Redirecionar para página de quarentena
       setTimeout(() => {

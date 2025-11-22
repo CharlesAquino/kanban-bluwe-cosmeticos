@@ -78,6 +78,13 @@ model Product {
   @@map("products")
 }
 
+enum SemiFinishedStatus {
+  AGUARDANDO    // Aguardando envase
+  ENVIASANDO    // Em processo de envase
+  QUARENTENA    // Em quarentena (não aparece mais em semi-acabados)
+  FINALIZADO    // Liberado da quarentena
+}
+
 model SemiFinishedItem {
   id               String   @id @default(cuid())
   productId        String?
@@ -88,7 +95,7 @@ model SemiFinishedItem {
   batch            String
   quantityTotal    Float
   quantityEnvasado Float   @default(0)
-  status           String   @default("aguardando")
+  status           SemiFinishedStatus @default(AGUARDANDO)
   manufacturingDate DateTime @default(now()) // Data de fabricação (para controle de vencimento)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -98,6 +105,7 @@ model SemiFinishedItem {
 
   @@unique([op, batch])
   @@index([op, batch])
+  @@index([status])
   @@map("semi_finished_items")
 }
 
