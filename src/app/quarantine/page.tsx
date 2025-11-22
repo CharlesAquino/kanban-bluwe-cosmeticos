@@ -58,7 +58,7 @@ export default function QuarantinePage() {
     
     setBusy(`quarantine-${itemId}`)
     try {
-      const result = await sendBucketsToQuarantine(itemId, selectedBuckets)
+      const result = await sendContainersToQuarantine(itemId, selectedBuckets)
       if (!result.success) {
         alert(`Erro ao enviar para quarentena: ${result.error}`)
         return
@@ -96,7 +96,7 @@ export default function QuarantinePage() {
     
     setBusy(`release-${itemId}`)
     try {
-      const result = await releaseBucketsFromQuarantine(itemId, selectedBuckets)
+      const result = await releaseContainersFromQuarantine(itemId, selectedBuckets)
       if (!result.success) {
         alert(`Erro ao liberar da quarentena: ${result.error}`)
         return
