@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
           batch: normalizedBatch
         }
       }),
-      prisma.semiFinishedItem.findFirst({
+      prisma.semiFinishedItems.findFirst({
         where: {
           op: normalizedOp,
           batch: normalizedBatch

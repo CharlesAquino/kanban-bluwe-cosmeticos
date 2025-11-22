@@ -84,7 +84,7 @@ export async function PUT(
             id: { not: id } // Ignorar o próprio produto
           }
         }),
-        prisma.semiFinishedItem.findFirst({
+        prisma.semiFinishedItems.findFirst({
           where: {
             op: normalizedOp,
             batch: normalizedBatch
@@ -226,8 +226,8 @@ export async function PATCH(
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: {
-        status: status !== undefined ? String(status).toUpperCase() : product.status,
-        currentStage: currentStage !== undefined ? String(currentStage).toUpperCase() : product.currentStage,
+        status: status !== undefined ? (String(status).toUpperCase() as any) : product.status,
+        currentStage: currentStage !== undefined ? (String(currentStage).toUpperCase() as any) : product.currentStage,
         updatedAt: new Date()
       }
     })
