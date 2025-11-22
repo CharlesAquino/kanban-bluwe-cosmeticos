@@ -62,7 +62,10 @@ export default function SemiFinishedOverviewPage() {
   const dashboardStats = useMemo(() => {
     const totalProdutos = items.length
     const prontoEnvase = items.filter((item) => item.status === 'aguardando').length
-    const saldoTotal = items.reduce((sum, item) => sum + (Number(item.quantity_total) - Number(item.quantity_envasado)), 0)
+    const saldoTotal = items.reduce((sum, item) => {
+      const itemSaldo = Number(item.quantity_total) - Number(item.quantity_envasado)
+      return sum + itemSaldo
+    }, 0)
     const familias = Object.keys(groups).length
 
     return { totalProdutos, prontoEnvase, saldoTotal, familias }
@@ -288,7 +291,7 @@ export default function SemiFinishedOverviewPage() {
 
 function OverviewItemCard({ product }: { product: SemiItem }) {
   const { data: buckets, isLoading: loading, error } = useSemiFinishedBuckets(product.id)
-  const saldo = Number(product.quantity_total) - Number(product.quantity_envasado)
+  const saldo = useMemo(() => Number(product.quantity_total) - Number(product.quantity_envasado), [product.quantity_total, product.quantity_envasado])
 
   const bucketsArray = buckets || []
   const packagedCount = bucketsArray.filter((b: Bucket) => b.status === 'packaged').length

@@ -126,7 +126,10 @@ Formato: Use títulos claros, linguagem direta e foco em ações práticas.`
   const dashboardStats = useMemo(() => {
     const totalProdutos = items.length
     const aguardando = items.filter((item) => item.status === 'aguardando').length
-    const totalSaldo = items.reduce((sum, item) => sum + ((Number(item.quantity_total) || 0) - (Number(item.quantity_envasado) || 0)), 0)
+    const totalSaldo = items.reduce((sum, item) => {
+      const itemSaldo = (Number(item.quantity_total) || 0) - (Number(item.quantity_envasado) || 0)
+      return sum + itemSaldo
+    }, 0)
     const familias = Object.keys(groups).length
 
     return { totalProdutos, aguardando, totalSaldo, familias }
@@ -559,7 +562,7 @@ function MetricCard({ label, value, icon, accent }: { label: string; value: stri
 
 function CompactItemCard({ product, onManage }: { product: SemiItem; onManage: () => void }) {
   const { data: buckets, isLoading: loading, error } = useSemiFinishedBuckets(product.id)
-  const saldo = Number(product.quantity_total) - Number(product.quantity_envasado)
+  const saldo = useMemo(() => Number(product.quantity_total) - Number(product.quantity_envasado), [product.quantity_total, product.quantity_envasado])
 
   // Status simplificado baseado nos baldes
   const statusSummary = useMemo(() => {
@@ -780,7 +783,7 @@ function ItemRow({ item, onDeleted }: { item: SemiItem; onDeleted?: () => void }
     }
   }
 
-  const saldo = Number(item.quantity_total) - Number(item.quantity_envasado)
+  const saldo = useMemo(() => Number(item.quantity_total) - Number(item.quantity_envasado), [item.quantity_total, item.quantity_envasado])
   const soft = getSemiFinishedFamilyColor(item.family)
 
   return (
