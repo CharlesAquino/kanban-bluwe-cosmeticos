@@ -132,7 +132,6 @@ Formato: Use títulos claros, linguagem direta e foco em ações práticas.`
       }
 
       const result = await createSemiFinished({
-        productId: `legacy-${legacyOp}-${legacyBatch}`,
         name: legacyName,
         family: legacyFamily,
         op: legacyOp,

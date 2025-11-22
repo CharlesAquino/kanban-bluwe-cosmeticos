@@ -27,7 +27,7 @@ export interface Bucket {
 }
 
 export interface CreateSemiParams {
-  productId: string
+  productId?: string
   name: string
   family: string
   op: string
