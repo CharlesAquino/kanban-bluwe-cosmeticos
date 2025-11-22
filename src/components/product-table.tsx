@@ -16,6 +16,7 @@ import { Package, Play, Pause, CheckCircle } from 'lucide-react'
 import type { Product, ProductStage, HourlyControl } from '@/lib/types'
 import { STAGE_LABELS, STAGE_COLORS, STAGE_ORDER } from '@/lib/types'
 import { KanbanColumn } from './kanban-column'
+import { ProductEditDialog } from './product-edit-dialog'
 import { Carousel } from '@/components/ui/carousel'
 
 interface ProductTableProps {
@@ -28,6 +29,7 @@ interface ProductTableProps {
   onFinalizeProduct: (id: string) => void
   modOperators?: { id: string; name: string; role?: string | null; isActive?: boolean }[]
   finalizingProducts?: Set<string>
+  onProductUpdated?: () => void
 }
 
 export function ProductTable({
@@ -40,8 +42,10 @@ export function ProductTable({
   onFinalizeProduct,
   modOperators,
   finalizingProducts,
+  onProductUpdated,
 }: ProductTableProps) {
   const [draggedProduct, setDraggedProduct] = useState<Product | null>(null)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   // Estágios visíveis no board (oculta Backlog e Rejeitado apenas na UI)
   const VISIBLE_STAGES = STAGE_ORDER.filter(
@@ -64,6 +68,13 @@ export function ProductTable({
       hour: '2-digit',
       minute: '2-digit'
     })
+  }
+
+  const handleEditProduct = (id: string) => {
+    const product = products.find((p) => p.id === id)
+    if (product) {
+      setEditingProduct(product)
+    }
   }
 
   const getDuration = (start: string, end: string | null) => {
@@ -270,6 +281,7 @@ export function ProductTable({
                   onBlockProduction={onBlockProduction}
                   onDeleteProduct={onDeleteProduct}
                   onFinalizeProduct={onFinalizeProduct}
+                  onEditProduct={handleEditProduct}
                   getModOperatorLabel={getModOperatorLabel}
                   finalizingProducts={finalizingProducts}
                 />
@@ -342,6 +354,19 @@ export function ProductTable({
           )
         })}
       </Carousel>
+
+      <ProductEditDialog
+        product={editingProduct}
+        open={!!editingProduct}
+        onOpenChange={(open) => {
+          if (!open) setEditingProduct(null)
+        }}
+        onSaved={() => {
+          if (onProductUpdated) {
+            onProductUpdated()
+          }
+        }}
+      />
     </div>
   )
 }

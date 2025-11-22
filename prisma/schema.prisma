@@ -51,7 +51,7 @@ model User {
 model Product {
   id            String   @id @default(cuid())
   name          String
-  op            String   @unique // Ordem de produção única
+  op            String   // Ordem de produção
   batch         String   // Lote
   quantity      Float    // Quantidade em kg
   currentStage  ProductStage @default(PRODUCAO_1KG)
@@ -67,6 +67,7 @@ model Product {
 
   semiFinishedItems SemiFinishedItem[]
 
+  @@unique([op, batch])
   @@index([op])
   @@index([batch])
   @@index([currentStage])
@@ -92,6 +93,7 @@ model SemiFinishedItem {
 
   buckets SemiFinishedBucket[]
 
+  @@unique([op, batch])
   @@index([op, batch])
   @@map("semi_finished_items")
 }

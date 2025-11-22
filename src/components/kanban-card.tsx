@@ -15,6 +15,7 @@ import {
   Package,
   CheckCircle,
   QrCode,
+  Edit,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -36,6 +37,7 @@ interface KanbanCardProps {
   onBlockProduction: (id: string, reason: string) => void
   onDeleteProduct: (id: string) => void
   onFinalize: (id: string) => void
+  onEdit: (id: string) => void
   modOperatorLabel?: string | null
   finalizingProducts?: Set<string>
 }
@@ -50,6 +52,7 @@ const KanbanCardBase = ({
   onBlockProduction,
   onDeleteProduct,
   onFinalize,
+  onEdit,
   modOperatorLabel,
   finalizingProducts,
 }: KanbanCardProps) => {
@@ -216,6 +219,18 @@ const KanbanCardBase = ({
               title="Excluir produto"
             >
               <Trash2 className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 h-6 w-6 text-slate-400 hover:text-blue-600 hover:bg-blue-50 flex-shrink-0 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit(productId)
+              }}
+              title="Editar produto"
+            >
+              <Edit className="h-3 w-3" />
             </Button>
           </div>
         </div>

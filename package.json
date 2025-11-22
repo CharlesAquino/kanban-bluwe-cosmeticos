@@ -20,7 +20,7 @@
     "clean:windows": "if exist .next rmdir /s /q .next && if exist node_modules\\.prisma rmdir /s /q node_modules\\.prisma && npm install",
     "reset": "npm run clean:windows && npx prisma generate --force-reset",
     "deploy:vercel": "vercel --prod",
-    "deploy:netlify": "netlify deploy --prod --dir=.next",
+    "migrate:postgres": "node scripts/migrate-to-postgres.js",
     "deploy:docker": "docker build -t kanban-bluwe-cosmeticos . && docker run -p 3000:3000 kanban-bluwe-cosmeticos",
     "docker:build": "docker build -t kanban-bluwe-cosmeticos .",
     "docker:run": "docker run -p 3000:3000 kanban-bluwe-cosmeticos",

@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Normalização de dados
+    const normalizedOp = String(op).trim()
+    const normalizedBatch = String(batch).trim()
     const qty = Number(quantity)
     if (isNaN(qty) || qty <= 0) {
       return NextResponse.json({
@@ -50,11 +52,45 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Validação cruzada de OP+Lote em Product e SemiFinishedItem
+    console.log('=== API PRODUCTS: Verificando duplicidade OP+Lote ===')
+    const [existingProduct, existingSemi] = await Promise.all([
+      prisma.product.findFirst({
+        where: {
+          op: normalizedOp,
+          batch: normalizedBatch
+        }
+      }),
+      prisma.semiFinishedItem.findFirst({
+        where: {
+          op: normalizedOp,
+          batch: normalizedBatch
+        }
+      })
+    ])
+
+    if (existingProduct) {
+      console.log('=== API PRODUCTS: OP+Lote já existe em produção ===')
+      return NextResponse.json({
+        success: false,
+        error: `OP "${normalizedOp}" com Lote "${normalizedBatch}" já existe em produção.`
+      }, { status: 409 })
+    }
+
+    if (existingSemi) {
+      console.log('=== API PRODUCTS: OP+Lote já existe em semi-acabados ===')
+      return NextResponse.json({
+        success: false,
+        error: `OP "${normalizedOp}" com Lote "${normalizedBatch}" já existe em semi-acabados.`
+      }, { status: 409 })
+    }
+
+    // Criar produto
     const product = await prisma.product.create({
       data: {
         name: String(name).trim(),
-        op: String(op).trim(),
-        batch: String(batch).trim(),
+        op: normalizedOp,
+        batch: normalizedBatch,
         quantity: qty,
         // Estágio inicial padronizado com o enum ProductStage
         currentStage: 'PRODUCAO_1KG',
@@ -71,62 +107,23 @@ export async function POST(request: NextRequest) {
       success: true,
       data: product
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('=== API PRODUCTS: Erro ao criar produto ===', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to create product'
-    }, { status: 500 })
-  }
-}
-
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const { id } = params
-    const body = await request.json()
-
-    const product = await prisma.product.update({
-      where: { id },
-      data: {
-        name: body.name,
-        op: body.op,
-        batch: body.batch,
-        quantity: body.quantity,
-        currentStage: body.currentStage,
-        status: body.status
+    
+    // Tratar violação de constraint única (race condition)
+    if (error.code === 'P2002') {
+      const target = error.meta?.target as string[] || []
+      if (target.includes('op') && target.includes('batch')) {
+        return NextResponse.json({
+          success: false,
+          error: 'OP e Lote já estão em uso por outro produto.'
+        }, { status: 409 })
       }
-    })
-
-    return NextResponse.json({
-      success: true,
-      data: product
-    })
-  } catch (error) {
-    console.error('=== API PRODUCTS: Erro ao atualizar produto ===', error)
+    }
+    
     return NextResponse.json({
       success: false,
-      error: 'Failed to update product'
-    }, { status: 500 })
-  }
-}
-
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const { id } = params
-
-    await prisma.product.delete({
-      where: { id }
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: 'Product deleted successfully'
-    })
-  } catch (error) {
-    console.error('=== API PRODUCTS: Erro ao deletar produto ===', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to delete product'
+      error: 'Erro ao criar produto'
     }, { status: 500 })
   }
 }

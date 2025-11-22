@@ -28,6 +28,7 @@ interface KanbanColumnProps {
   onBlockProduction: (id: string, reason: string) => void
   onDeleteProduct: (id: string) => void
   onFinalizeProduct: (id: string) => void
+  onEditProduct: (id: string) => void
   getModOperatorLabel?: (product: Product) => string | null
   finalizingProducts?: Set<string>
 }
@@ -54,6 +55,7 @@ function KanbanColumnBase({
   onBlockProduction,
   onDeleteProduct,
   onFinalizeProduct,
+  onEditProduct,
   getModOperatorLabel,
   finalizingProducts,
 }: KanbanColumnProps) {
@@ -113,6 +115,7 @@ function KanbanColumnBase({
             onBlockProduction={onBlockProduction}
             onDeleteProduct={onDeleteProduct}
             onFinalize={onFinalizeProduct}
+            onEdit={onEditProduct}
             modOperatorLabel={getModOperatorLabel ? getModOperatorLabel(product) : null}
             finalizingProducts={finalizingProducts}
           />

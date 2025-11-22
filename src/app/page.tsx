@@ -457,6 +457,7 @@ export default function Home() {
                   onFinalizeProduct={handleFinalize}
                   modOperators={modOperators}
                   finalizingProducts={finalizingProducts}
+                  onProductUpdated={fetchData}
                 />
               </div>
             </section>

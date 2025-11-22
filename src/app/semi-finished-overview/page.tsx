@@ -12,14 +12,14 @@ export default function SemiFinishedOverviewPage() {
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
   const [overviewDropdownOpen, setOverviewDropdownOpen] = useState(false)
   
-  const { data, error, isLoading } = useSWR<SemiItem[]>(
+  const { data, error, isLoading, mutate } = useSWR<SemiItem[]>(
     '/api/semi-finished',
     semiFinishedFetcher,
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      refreshInterval: 15000,
-      keepPreviousData: true,
+      refreshInterval: 10000, // Reduzido para 10s para atualização mais frequente
+      keepPreviousData: false, // Removido para forçar atualização completa
     }
   )
 
