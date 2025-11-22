@@ -1,12 +1,13 @@
 'use client'
 
 import useSWR from 'swr'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, useEffect, type ReactNode } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { SemiItem, semiFinishedFetcher, useSemiFinishedBuckets } from '@/lib/semi-finished-lib'
 import { Layers, Droplet, Sparkles, Users, BarChart3, ChevronDown, Shield, Settings, Beaker, Package } from 'lucide-react'
 import Link from 'next/link'
+import { subscribeChanges } from '@/lib/bus'
 
 export default function SemiFinishedOverviewPage() {
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
@@ -24,6 +25,16 @@ export default function SemiFinishedOverviewPage() {
   )
 
   const items = useMemo(() => data || [], [data])
+
+  // Escutar eventos de mudança para atualização em tempo real
+  useEffect(() => {
+    const unsub = subscribeChanges((ev) => {
+      if (ev.type === 'semi_finished') {
+        mutate('/api/semi-finished')
+      }
+    })
+    return () => unsub()
+  }, [mutate])
 
   const groups = useMemo(() => {
     return items.reduce((acc, it) => {

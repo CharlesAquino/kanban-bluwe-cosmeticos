@@ -17,6 +17,7 @@ import { BarChart3, Package, Beaker, Settings, ChevronDown, Users, Shield } from
 import Link from 'next/link'
 import { useToast } from '@/components/ui/toast'
 import { usePathname } from 'next/navigation'
+import { broadcastChange } from '@/lib/bus'
 
 export default function Home() {
   const { showToast } = useToast()
@@ -164,6 +165,10 @@ export default function Home() {
       
       // Força recarga completa para garantir sincronia
       await fetchData()
+      
+      // Notificar outras páginas sobre mudança nos semi-acabados
+      broadcastChange({ type: 'semi_finished', action: 'product_finalized' })
+      
       showToast('Produto finalizado e enviado para Semi-Acabados', 'success')
     } catch (e) {
       showToast(`Erro ao finalizar: ${e instanceof Error ? e.message : 'desconhecido'}`, 'error')

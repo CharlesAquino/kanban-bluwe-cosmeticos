@@ -1,7 +1,7 @@
 "use client"
 
 import useSWR, { mutate } from 'swr'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, useEffect, type ReactNode } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Send, PackageCheck, Undo2, Loader2, Trash2, Settings2, Layers, Droplet, TrendingUp, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, Package, Clock, Brain } from 'lucide-react'
 import { SemiItem, Bucket, semiFinishedFetcher, useSemiFinishedBuckets, getSemiFinishedFamilyColor, deleteSemiFinished, createSemiFinished } from '@/lib/semi-finished-lib'
 import Link from 'next/link'
+import { subscribeChanges } from '@/lib/bus'
 
 export default function SemiFinishedPage() {
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false)
@@ -25,6 +26,17 @@ export default function SemiFinishedPage() {
     keepPreviousData: true,
   })
   const items = useMemo(() => data || [], [data])
+  
+  // Escutar eventos de mudança para atualização em tempo real
+  useEffect(() => {
+    const unsub = subscribeChanges((ev) => {
+      if (ev.type === 'semi_finished') {
+        mutate('/api/semi-finished')
+      }
+    })
+    return () => unsub()
+  }, [mutate])
+  
   const [selectedProduct, setSelectedProduct] = useState<SemiItem | null>(null)
   const [legacyName, setLegacyName] = useState('')
   const [legacyFamily, setLegacyFamily] = useState('')
