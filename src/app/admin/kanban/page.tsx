@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, Package, Activity, CheckCircle, AlertTriangle, BarChart3, Settings, ChevronDown, Shield, Users, Beaker, TrendingUp, Clock, Zap, Target, CheckSquare } from 'lucide-react'
-import { loadProductsAndStats } from '@/lib/product-operations'
+import { loadProductsAndStats, finalizeProduct } from '@/lib/product-operations'
 import type { Product, ProductStage } from '@/lib/types'
 import { STAGE_ORDER, STAGE_LABELS } from '@/lib/types'
 import Link from 'next/link'
@@ -82,46 +82,17 @@ export default function AdminKanbanPage() {
     [products, semiFinishedCount]
   )
 
-  // Função para finalizar produto e mover para semi-acabados
+  // Função para finalizar produto e mover para semi-acabados (USANDO API UNIFICADA)
   const handleFinalizeProduct = async (product: Product) => {
     try {
-      // 1. Mover produto para semi-acabados via API
-      const semiFinishedData = {
-        name: product.name,
-        family: 'DEFAULT', // Pode ser ajustado conforme necessidade
-        op: product.op,
-        batch: product.batch,
-        quantity: product.quantity,
-        status: 'COMPLETED',
-        createdAt: new Date().toISOString(),
-        sourceProductId: product.id
+      // Usar a mesma API de finalização do kanban principal
+      const result = await finalizeProduct(product.id)
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao finalizar produto')
       }
 
-      const semiFinishedResponse = await fetch('/api/semi-finished', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(semiFinishedData)
-      })
-
-      if (!semiFinishedResponse.ok) {
-        throw new Error('Erro ao criar item semi-acabado')
-      }
-
-      // 2. Atualizar status do produto para COMPLETED
-      const updateResponse = await fetch(`/api/products/${product.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          status: 'COMPLETED',
-          currentStage: 'COMPLETED'
-        })
-      })
-
-      if (!updateResponse.ok) {
-        throw new Error('Erro ao atualizar status do produto')
-      }
-
-      // 3. Recarregar dados
+      // Recarregar dados para refletir mudanças
       await fetchData()
       
     } catch (err) {

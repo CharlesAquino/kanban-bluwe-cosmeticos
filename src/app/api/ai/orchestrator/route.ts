@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { callLlama } from '@/lib/llama-client'
+import { callAIWithFallback } from '@/lib/ai-client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +18,8 @@ export async function POST(request: NextRequest) {
       options 
     })
 
-    const result = await callLlama(messages, options)
+    // Usar AI client genérico com fallback entre múltiplos provedores
+    const result = await callAIWithFallback(messages, options)
 
     if (!result.success) {
       console.error('❌ Orchestrator error:', result.error)

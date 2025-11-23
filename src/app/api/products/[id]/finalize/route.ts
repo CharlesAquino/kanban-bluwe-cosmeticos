@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { dispatchProductFinalized } from '@/lib/event-dispatcher'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-import { prisma } from '@/lib/prisma'
 
 export async function POST(
   _request: NextRequest,
@@ -71,6 +71,21 @@ export async function POST(
     })
 
     console.log('Semi-acabado criado:', semiFinished)
+
+    // Disparar evento neural para o Neural Orchestrator
+    try {
+      await dispatchProductFinalized({
+        productId: product.id,
+        productName: product.name,
+        op: product.op,
+        batch: product.batch,
+        quantity: product.quantity,
+        semiFinishedId: semiFinished.id
+      })
+      console.log('🧠 Evento neural productFinalized disparado com sucesso')
+    } catch (neuralError) {
+      console.warn('⚠️ Erro ao disparar evento neural (não crítico):', neuralError)
+    }
 
     return NextResponse.json({ success: true, data: semiFinished }, { status: 201 })
   } catch (error) {
