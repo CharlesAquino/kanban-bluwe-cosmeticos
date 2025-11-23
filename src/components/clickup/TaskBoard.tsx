@@ -475,40 +475,6 @@ export const TaskBoard: React.FC = () => {
           )
         })}
       </div>
-                  <Label>Status</Label>
-                  <Badge className={statusColors[selectedTask.status as keyof typeof statusColors]}>
-                    {selectedTask.status}
-                  </Badge>
-                </div>
-              </div>
-
-              {selectedTask.dueDate && (
-                <div>
-                  <Label>Data de Vencimento</Label>
-                  <p className="text-sm text-gray-600">
-                    {new Date(selectedTask.dueDate).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setSelectedTask(null)}>
-                  Fechar
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    handleDeleteTask(selectedTask.id)
-                    setSelectedTask(null)
-                  }}
-                >
-                  Excluir
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
