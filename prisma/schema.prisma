@@ -33,6 +33,25 @@ enum ProductStage {
   REJEITADO
 }
 
+// Novos Enums inspirados no ClickUp
+enum TaskPriority {
+  URGENT
+  HIGH
+  NORMAL
+  LOW
+}
+
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DROPDOWN
+  DATE
+  STATUS
+  CHECKBOX
+  URL
+  EMAIL
+}
+
 // Tabelas principais
 model User {
   id        String   @id @default(cuid())
@@ -45,7 +64,221 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relacionamentos ClickUp-style
+  createdProducts   Product[] @relation("UserCreatedProducts")
+  updatedProducts   Product[] @relation("UserUpdatedProducts")
+  createdSemiItems   SemiFinishedItem[] @relation("UserCreatedSemiItems")
+  updatedSemiItems   SemiFinishedItem[] @relation("UserUpdatedSemiItems")
+  createdTags        Tag[]
+  createdWorkflows   Workflow[]
+  assignedTasks      TaskAssignment[]
+  createdTasks       Task[]
+  notifications      Notification[]
+  activityLogs       ActivityLog[]
+
   @@map("users")
+}
+
+// Sistema de Tags (inspirado ClickUp)
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  color       String   @default("#3B82F6")
+  description String?
+  usageCount  Int      @default(0)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator     User     @relation(fields: [createdById], references: [id])
+  products    ProductTag[]
+  semiItems   SemiFinishedTag[]
+  tasks       TaskTag[]
+
+  @@map("tags")
+}
+
+// Sistema de Workflows Customizáveis
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  entityType  String   // "product" | "semiFinished" | "task"
+  isActive    Boolean  @default(true)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator     User     @relation(fields: [createdById], references: [id])
+  statuses    WorkflowStatus[]
+  transitions WorkflowTransition[]
+
+  @@map("workflows")
+}
+
+model WorkflowStatus {
+  id          String   @id @default(cuid())
+  workflowId  String
+  name        String
+  color       String
+  type        String   @default("open") // "open" | "closed" | "progress"
+  order       Int
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  transitions WorkflowTransition[] @relation("TransitionFromStatus")
+  incomingTransitions WorkflowTransition[] @relation("TransitionToStatus")
+
+  @@map("workflow_statuses")
+}
+
+model WorkflowTransition {
+  id           String   @id @default(cuid())
+  workflowId   String
+  fromStatusId String
+  toStatusId   String
+  conditions   Json?    // Condições customizadas
+  actions      Json?    // Ações a executar
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workflow     Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  fromStatus   WorkflowStatus @relation("TransitionFromStatus", fields: [fromStatusId], references: [id])
+  toStatus     WorkflowStatus @relation("TransitionToStatus", fields: [toStatusId], references: [id])
+
+  @@map("workflow_transitions")
+}
+
+// Sistema de Custom Fields
+model CustomField {
+  id          String         @id @default(cuid())
+  name        String
+  type        CustomFieldType
+  required    Boolean        @default(false)
+  options     Json?          // Para dropdown
+  defaultValue Json?
+  entityType  String         // "product" | "semiFinished"
+  isActive    Boolean        @default(true)
+  order       Int
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  values      CustomFieldValue[]
+
+  @@map("custom_fields")
+}
+
+model CustomFieldValue {
+  id            String   @id @default(cuid())
+  customFieldId String
+  entityId      String   // ID do produto ou semi-acabado
+  entityType    String   // "product" | "semiFinished"
+  value         Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+
+  @@unique([customFieldId, entityId, entityType])
+  @@map("custom_field_values")
+}
+
+// Sistema de Tarefas (ClickUp style)
+model Task {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  priority    TaskPriority  @default(NORMAL)
+  status      String        @default("todo")
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdById String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  creator     User          @relation("UserCreatedTasks", fields: [createdById], references: [id])
+  assignees   TaskAssignment[]
+  tags        TaskTag[]
+  dependencies TaskDependency[] @relation("TaskDependsOn")
+  dependents   TaskDependency[] @relation("TaskDependent")
+  parentTaskId String?
+  parentTask   Task?         @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
+  subtasks     Task[]        @relation("TaskHierarchy")
+  activityLogs ActivityLog[]
+
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  id     String @id @default(cuid())
+  taskId String
+  userId String
+  role   String @default("assignee") // "assignee" | "reviewer" | "follower"
+  createdAt DateTime @default(now())
+
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([taskId, userId])
+  @@map("task_assignments")
+}
+
+model TaskTag {
+  taskId String
+  tagId  String
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@map("task_tags")
+}
+
+model TaskDependency {
+  id           String @id @default(cuid())
+  dependentId  String
+  dependsOnId  String
+  type         String @default("finish_to_start") // "finish_to_start", "start_to_start", etc.
+  createdAt    DateTime @default(now())
+
+  dependent  Task @relation("TaskDependsOn", fields: [dependentId], references: [id])
+  dependsOn  Task @relation("TaskDependent", fields: [dependsOnId], references: [id])
+
+  @@map("task_dependencies")
+}
+
+// Sistema de Notificações
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      String   // "info" | "warning" | "error" | "success"
+  userId    String
+  isRead    Boolean  @default(false)
+  metadata  Json?    // Dados adicionais
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+// Activity Log (Feed de atividades)
+model ActivityLog {
+  id         String   @id @default(cuid())
+  action     String   // "created" | "updated" | "deleted" | "status_changed"
+  entityType String   // "product" | "semiFinished" | "task" | "tag"
+  entityId   String
+  userId     String
+  metadata   Json?    // Dados anteriores e novos
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
 }
 
 model Product {
@@ -66,7 +299,14 @@ model Product {
   createdById   String
   updatedById   String?
 
+  // Novos relacionamentos ClickUp-style
+  tags          ProductTag[]
+  tasks         Task[]
+  activityLogs  ActivityLog[]
+
   semiFinishedItems SemiFinishedItem[]
+  creator User @relation("UserCreatedProducts", fields: [createdById], references: [id])
+  updater User? @relation("UserUpdatedProducts", fields: [updatedById], references: [id])
 
   @@unique([op, batch])
   @@index([op])
@@ -76,6 +316,18 @@ model Product {
   @@index([createdById])
   @@index([priority])
   @@map("products")
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@map("product_tags")
 }
 
 enum SemiFinishedStatus {
@@ -99,14 +351,35 @@ model SemiFinishedItem {
   manufacturingDate DateTime @default(now()) // Data de fabricação (para controle de vencimento)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  createdById      String
+  updatedById      String?
+
+  // Novos relacionamentos ClickUp-style
+  tags             SemiFinishedTag[]
+  tasks            Task[]
+  activityLogs     ActivityLog[]
 
   buckets SemiFinishedBucket[]
   packagingContainers PackagingContainer[]
+  creator User @relation("UserCreatedSemiItems", fields: [createdById], references: [id])
+  updater User? @relation("UserUpdatedSemiItems", fields: [updatedById], references: [id])
 
   @@unique([op, batch])
   @@index([op, batch])
   @@index([status])
   @@map("semi_finished_items")
+}
+
+model SemiFinishedTag {
+  semiFinishedId String
+  tagId          String
+  createdAt      DateTime @default(now())
+
+  semiFinished SemiFinishedItem @relation(fields: [semiFinishedId], references: [id], onDelete: Cascade)
+  tag          Tag              @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([semiFinishedId, tagId])
+  @@map("semi_finished_tags")
 }
 
 model SemiFinishedBucket {
