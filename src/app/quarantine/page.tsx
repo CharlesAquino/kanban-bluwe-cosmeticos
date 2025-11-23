@@ -86,7 +86,7 @@ export default function QuarantinePage() {
     
     // Calcular dias médios em quarentena
     const avgMs = items.reduce((sum, item) => {
-      const created = new Date(item.created_at || item.createdAt)
+      const created = new Date(item.manufacturingDate)
       const now = new Date()
       return sum + (now.getTime() - created.getTime())
     }, 0) / (total || 1)
@@ -284,6 +284,8 @@ export default function QuarantinePage() {
                   <button
                     onClick={clearSelection}
                     className="text-blue-600 hover:text-blue-800"
+                    aria-label="Limpar seleção"
+                    title="Limpar todos os itens selecionados"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -365,7 +367,7 @@ function QuarantineItemCard({
 }) {
   const familyColor = getSemiFinishedFamilyColor(item.family)
   const daysInQuarantine = Math.floor(
-    (new Date().getTime() - new Date(item.created_at || item.createdAt).getTime()) / 
+    (new Date().getTime() - new Date(item.manufacturingDate).getTime()) / 
     (1000 * 60 * 60 * 24)
   )
 
