@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { callAIWithFallback } from '@/lib/ai-client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,27 +12,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('🎯 Orchestrator received request:', { 
-      messageCount: messages.length, 
-      options 
+    console.log('🎯 Orchestrator received request (MOCK):', {
+      messageCount: messages.length,
+      options
     })
 
-    // Usar AI client genérico com fallback entre múltiplos provedores
-    const result = await callAIWithFallback(messages, options)
-
-    if (!result.success) {
-      console.error('❌ Orchestrator error:', result.error)
-      return NextResponse.json(result, { status: 500 })
+    // Mock response for AI orchestrator
+    const mockResponse = {
+      success: true,
+      data: {
+        response: 'Este é um sistema mock. Configure OPENAI_API_KEY para funcionalidades reais de IA.',
+        provider: 'mock',
+        timestamp: new Date().toISOString(),
+        tokens: 0
+      },
+      metadata: {
+        model: 'mock-model',
+        temperature: options?.temperature || 0.7,
+        maxTokens: options?.maxTokens || 1000
+      }
     }
 
-    console.log('✅ Orchestrator success')
-    return NextResponse.json(result)
+    console.log('✅ Orchestrator mock success')
+    return NextResponse.json(mockResponse)
 
   } catch (error) {
     console.error('❌ Orchestrator unexpected error:', error)
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         details: error instanceof Error ? error.stack : 'No details available'
       },
@@ -43,9 +50,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json({ 
-    message: 'AI Orchestrator API - POST to use',
+  return NextResponse.json({
+    message: 'AI Orchestrator API - POST to use (MOCK MODE)',
     version: '1.0.0',
+    mode: 'mock',
     endpoints: {
       POST: '/api/ai/orchestrator - Send messages array for AI analysis'
     }
