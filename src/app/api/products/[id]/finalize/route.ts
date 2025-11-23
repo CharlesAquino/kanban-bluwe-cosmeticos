@@ -20,13 +20,22 @@ export async function POST(
     })
 
     if (!product) {
+      console.error('❌ Produto não encontrado:', id)
       return NextResponse.json({ success: false, error: 'Produto não encontrado' }, { status: 404 })
     }
 
+    console.log('📋 Produto encontrado:', { 
+      id: product.id, 
+      name: product.name, 
+      currentStage: product.currentStage,
+      status: product.status 
+    })
+
     const stage = String(product.currentStage).toUpperCase()
     if (stage !== 'APROVADO' && stage !== 'FINALIZADO') {
+      console.error('❌ Produto não está em estágio aprovado:', stage)
       return NextResponse.json(
-        { success: false, error: 'Produto ainda não está no estágio Aprovado' },
+        { success: false, error: `Produto ainda não está no estágio Aprovado. Estágio atual: ${stage}` },
         { status: 400 },
       )
     }
