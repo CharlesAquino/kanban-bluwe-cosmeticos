@@ -12,8 +12,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TagManager } from '@/components/clickup/TagManager'
-import { TaskBoard } from '@/components/clickup/TaskBoard'
-import { CustomFieldManager } from '@/components/clickup/CustomFieldManager'
+import { TaskBoardSimple } from '@/components/clickup/TaskBoardSimple'
+import { CustomFieldManagerSimple } from '@/components/clickup/CustomFieldManagerSimple'
 import { Tag, Plus, Settings, CheckCircle } from 'lucide-react'
 
 // Criar QueryClient
@@ -140,7 +140,7 @@ function ClickupTestContent() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <TaskBoard />
+                <TaskBoardSimple />
               </CardContent>
             </Card>
           </TabsContent>
@@ -161,12 +161,7 @@ function ClickupTestContent() {
                     {JSON.stringify(customFieldValues, null, 2)}
                   </pre>
                 </div>
-
-                <CustomFieldManager
-                  entityType="product"
-                  values={customFieldValues}
-                  onChange={handleCustomFieldChange}
-                />
+                <CustomFieldManagerSimple />
               </CardContent>
             </Card>
           </TabsContent>
