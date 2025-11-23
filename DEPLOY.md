@@ -47,50 +47,45 @@ npm run deploy:netlify
 
 ---
 
-### 3. 🐳 Docker
+### 3. 🐳 Docker (Mock System)
+
+#### ⚠️ IMPORTANTE: Sistema usa Mock Data
+Este projeto usa mock system temporariamente devido a problemas de permissão Prisma no Windows.
 
 #### Pré-requisitos
 - Docker instalado
-- Servidor de banco de dados (PostgreSQL recomendado)
+- Sem necessidade de banco de dados (usa mock)
 
 #### Passos
 ```bash
-# 1. Build da imagem
-npm run docker:build
+# 1. Build da imagem (simplificado)
+docker build -t kanban-bluwe-mock .
 
 # 2. Rodar container
-npm run docker:run
+docker run -p 3000:8080 kanban-bluwe-mock
 
-# 3. Deploy completo
-npm run deploy:docker
+# 3. Deploy com script
+chmod +x scripts/deploy-docker.sh
+./scripts/deploy-docker.sh
 ```
 
-#### Docker Compose (Recomendado)
-```yaml
-# docker-compose.yml
-version: '3.8'
-services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL=postgresql://user:pass@db:5432/kanban
-      - NEXTAUTH_SECRET=your-secret-key
-    depends_on:
-      - db
-  
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_DB=kanban
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=pass
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+#### Docker Compose (Mock)
+```bash
+# Usar arquivo específico para mock
+docker-compose -f docker-compose.mock.yml up --build
+```
 
-volumes:
-  postgres_data:
+#### Dockerfile Simplificado
+```dockerfile
+# Single stage - sem Prisma
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+EXPOSE 8080
+CMD ["npm", "start"]
 ```
 
 ---

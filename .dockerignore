@@ -12,3 +12,10 @@ README.md
 .gitignore
 Dockerfile
 Dockerfile.prod
+Dockerfile.mock
+Dockerfile.simple
+docker-compose.mock.yml
+.vscode
+coverage
+dist
+build
