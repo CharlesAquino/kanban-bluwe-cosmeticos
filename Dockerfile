@@ -11,8 +11,8 @@ RUN apk add --no-cache libc6-compat
 # Copiar package files
 COPY package.json package-lock.json* ./
 
-# Instalar apenas dependências essenciais
-RUN npm ci --omit=dev --ignore-scripts
+# Instalar TODAS as dependências (incluindo dev para build)
+RUN npm ci
 
 # Copiar código fonte
 COPY . .
@@ -20,6 +20,9 @@ COPY . .
 # Build da aplicação
 ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
+
+# Remover dependências de desenvolvimento após build
+RUN npm prune --omit=dev
 
 # Expor porta
 EXPOSE 8080
