@@ -24,12 +24,18 @@ export async function POST() {
       const totalKg = Number(item.quantityTotal)
       const envasadoKg = Number(item.quantityEnvasado || 0)
       
-      // Se foi totalmente envasado (ou excedeu)
+      // Se foi totalmente envasado (ou excedeu) - MOVER PARA QUARENTENA
       if (envasadoKg >= totalKg && totalKg > 0) {
-        console.log(`✅ Produto pronto para remoção: ${item.name} (${item.family})`)
+        console.log(`✅ Produto pronto para quarentena: ${item.name} (${item.family})`)
         console.log(`   Total: ${totalKg}kg, Envasado: ${envasadoKg}kg`)
         
-        toRemove.push(item.id)
+        // Atualizar para QUARENTENA em vez de remover
+        await prisma.semiFinishedItem.update({
+          where: { id: item.id },
+          data: { status: 'QUARENTENA' }
+        })
+        
+        updated.push(item.id)
       } else if (envasadoKg > 0 && envasadoKg < totalKg) {
         // Se foi parcialmente envasado, marcar como ENVIASANDO
         if (item.status !== 'ENVIASANDO') {
@@ -43,42 +49,25 @@ export async function POST() {
       }
     }
 
-    // Remover produtos totalmente envasados
-    let removedCount = 0
-    if (toRemove.length > 0) {
-      // Primeiro remover baldes vinculados
-      await prisma.semiFinishedBucket.deleteMany({
-        where: {
-          semiFinishedId: {
-            in: toRemove
-          }
-        }
-      })
-
-      // Depois remover os semi-acabados
-      const result = await prisma.semiFinishedItem.deleteMany({
-        where: {
-          id: {
-            in: toRemove
-          }
-        }
-      })
-
-      removedCount = result.count
-    }
-
     console.log(`🧹 LIMPEZA CONCLUÍDA:`)
-    console.log(`   Removidos: ${removedCount} produtos`)
-    console.log(`   Atualizados: ${updated.length} produtos`)
+    console.log(`   Enviados para quarentena: ${updated.filter(id => 
+      candidates.find(item => item.id === id)?.status === 'QUARENTENA'
+    ).length} produtos`)
+    console.log(`   Atualizados para ENVIASANDO: ${updated.filter(id => 
+      candidates.find(item => item.id === id)?.status === 'ENVIASANDO'
+    ).length} produtos`)
     console.log(`   Total processados: ${candidates.length}`)
 
     return NextResponse.json({
       success: true,
       data: {
         processed: candidates.length,
-        removed: removedCount,
-        updated: updated.length,
-        removedIds: toRemove,
+        sentToQuarantine: updated.filter(id => 
+          candidates.find(item => item.id === id)?.status === 'QUARENTENA'
+        ).length,
+        markedAsPackaging: updated.filter(id => 
+          candidates.find(item => item.id === id)?.status === 'ENVIASANDO'
+        ).length,
         updatedIds: updated
       }
     })
@@ -96,7 +85,8 @@ export async function POST() {
 export async function GET() {
   return NextResponse.json({
     message: 'API de limpeza automática de semi-acabados',
-    usage: 'POST para executar limpeza',
-    behavior: 'Remove produtos totalmente envasados (quantityEnvasado >= quantityTotal)'
+    usage: 'POST para executar verificação',
+    behavior: 'Move produtos totalmente envasados para QUARENTENA e atualiza parcialmente envasados para ENVIASANDO',
+    flow: 'AGUARDANDO → ENVIASANDO → QUARENTENA → FINALIZADO'
   })
 }

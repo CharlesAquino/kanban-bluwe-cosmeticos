@@ -2,6 +2,8 @@
  * Verifica e remove produtos totalmente envasados
  * Chamada após operações de envase
  */
+import { prisma } from '@/lib/prisma'
+
 export async function checkAndRemoveFullyPackaged(): Promise<{
   removed: number
   updated: number
@@ -26,18 +28,14 @@ export async function checkAndRemoveFullyPackaged(): Promise<{
       const envasadoKg = Number(item.quantityEnvasado || 0)
 
       if (envasadoKg >= totalKg && totalKg > 0) {
-        // Produto totalmente envasado - remover
-        await prisma.semiFinishedItem.delete({
-          where: { id: item.id }
+        // Produto totalmente envasado - MOVER PARA QUARENTENA
+        await prisma.semiFinishedItem.update({
+          where: { id: item.id },
+          data: { status: 'QUARENTENA' }
         })
         
-        // Remover baldes vinculados
-        await prisma.semiFinishedBucket.deleteMany({
-          where: { semiFinishedId: item.id }
-        })
-
-        removed++
-        details.push(`✅ Removido: ${item.name} (${item.family}) - ${totalKg}kg`)
+        updated++
+        details.push(`🧠 Enviado para quarentena: ${item.name} (${item.family}) - ${totalKg}kg`)
       } else if (envasadoKg > 0 && item.status === 'AGUARDANDO') {
         // Produto parcialmente envasado - atualizar status
         await prisma.semiFinishedItem.update({
@@ -50,7 +48,7 @@ export async function checkAndRemoveFullyPackaged(): Promise<{
       }
     }
 
-    return { removed, updated, details }
+    return { removed: 0, updated, details }
   } catch (error) {
     console.error('Erro na verificação automática:', error)
     return { removed: 0, updated: 0, details: [] }
