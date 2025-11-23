@@ -69,10 +69,8 @@ model User {
   updatedProducts   Product[] @relation("UserUpdatedProducts")
   createdSemiItems   SemiFinishedItem[] @relation("UserCreatedSemiItems")
   updatedSemiItems   SemiFinishedItem[] @relation("UserUpdatedSemiItems")
-  createdTags        Tag[]
-  createdWorkflows   Workflow[]
+  createdTags        Tag[] @relation("UserCreatedTags")
   assignedTasks      TaskAssignment[]
-  createdTasks       Task[]
   notifications      Notification[]
   activityLogs       ActivityLog[]
 
@@ -90,65 +88,12 @@ model Tag {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  creator     User     @relation(fields: [createdById], references: [id])
+  creator     User     @relation("UserCreatedTags", fields: [createdById], references: [id])
   products    ProductTag[]
   semiItems   SemiFinishedTag[]
   tasks       TaskTag[]
 
   @@map("tags")
-}
-
-// Sistema de Workflows Customizáveis
-model Workflow {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  entityType  String   // "product" | "semiFinished" | "task"
-  isActive    Boolean  @default(true)
-  createdById String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  creator     User     @relation(fields: [createdById], references: [id])
-  statuses    WorkflowStatus[]
-  transitions WorkflowTransition[]
-
-  @@map("workflows")
-}
-
-model WorkflowStatus {
-  id          String   @id @default(cuid())
-  workflowId  String
-  name        String
-  color       String
-  type        String   @default("open") // "open" | "closed" | "progress"
-  order       Int
-  isDefault   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  transitions WorkflowTransition[] @relation("TransitionFromStatus")
-  incomingTransitions WorkflowTransition[] @relation("TransitionToStatus")
-
-  @@map("workflow_statuses")
-}
-
-model WorkflowTransition {
-  id           String   @id @default(cuid())
-  workflowId   String
-  fromStatusId String
-  toStatusId   String
-  conditions   Json?    // Condições customizadas
-  actions      Json?    // Ações a executar
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  workflow     Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  fromStatus   WorkflowStatus @relation("TransitionFromStatus", fields: [fromStatusId], references: [id])
-  toStatus     WorkflowStatus @relation("TransitionToStatus", fields: [toStatusId], references: [id])
-
-  @@map("workflow_transitions")
 }
 
 // Sistema de Custom Fields
@@ -198,7 +143,6 @@ model Task {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  creator     User          @relation("UserCreatedTasks", fields: [createdById], references: [id])
   assignees   TaskAssignment[]
   tags        TaskTag[]
   dependencies TaskDependency[] @relation("TaskDependsOn")
@@ -206,7 +150,6 @@ model Task {
   parentTaskId String?
   parentTask   Task?         @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
   subtasks     Task[]        @relation("TaskHierarchy")
-  activityLogs ActivityLog[]
 
   @@map("tasks")
 }
@@ -301,8 +244,6 @@ model Product {
 
   // Novos relacionamentos ClickUp-style
   tags          ProductTag[]
-  tasks         Task[]
-  activityLogs  ActivityLog[]
 
   semiFinishedItems SemiFinishedItem[]
   creator User @relation("UserCreatedProducts", fields: [createdById], references: [id])
@@ -356,8 +297,6 @@ model SemiFinishedItem {
 
   // Novos relacionamentos ClickUp-style
   tags             SemiFinishedTag[]
-  tasks            Task[]
-  activityLogs     ActivityLog[]
 
   buckets SemiFinishedBucket[]
   packagingContainers PackagingContainer[]
