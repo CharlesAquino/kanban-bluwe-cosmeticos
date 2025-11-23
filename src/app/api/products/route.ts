@@ -1,20 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getProducts, createProduct } from '@/lib/api-fallback'
+
+// Mock data temporário para funcionar imediatamente
+const mockProducts = [
+  {
+    id: 'mock-prod-1',
+    name: 'Produto Mock 1',
+    op: 'OP001',
+    batch: 'L001',
+    quantity: 100,
+    currentStage: 'PRODUCAO_1KG',
+    status: 'ACTIVE',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdById: 'mock-user'
+  },
+  {
+    id: 'mock-prod-2',
+    name: 'Produto Mock 2',
+    op: 'OP002',
+    batch: 'L002',
+    quantity: 200,
+    currentStage: 'PRODUCAO_5KG',
+    status: 'ACTIVE',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdById: 'mock-user'
+  }
+]
 
 export async function GET() {
   try {
-    console.log('=== API PRODUCTS: Buscando produtos ===')
-
-    const products = await getProducts()
-
-    console.log('=== API PRODUCTS: Produtos encontrados:', products.length)
+    console.log('=== API PRODUCTS: Retornando dados mock ===')
 
     return NextResponse.json({
       success: true,
-      data: products
+      data: mockProducts
     })
   } catch (error) {
-    console.error('=== API PRODUCTS: Erro ao buscar produtos ===', error)
+    console.error('=== API PRODUCTS: Erro ===', error)
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch products'

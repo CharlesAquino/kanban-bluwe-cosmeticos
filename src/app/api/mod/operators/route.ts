@@ -1,17 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getOperators } from '@/lib/api-fallback'
+
+// Mock operators temporário
+const mockOperators = [
+  {
+    id: 'mock-op-1',
+    name: 'João Silva',
+    email: 'joao@bluwe.com',
+    status: 'ACTIVE',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'mock-op-2',
+    name: 'Maria Santos',
+    email: 'maria@bluwe.com',
+    status: 'ACTIVE',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'mock-op-3',
+    name: 'Pedro Costa',
+    email: 'pedro@bluwe.com',
+    status: 'ACTIVE',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+]
 
 export async function GET() {
   try {
-    console.log('=== API MOD/OPERATORS: Buscando operadores ===')
-
-    const operators = await getOperators()
-
-    console.log('=== API MOD/OPERATORS: Operadores encontrados:', operators.length)
+    console.log('=== API MOD/OPERATORS: Retornando operadores mock ===')
 
     return NextResponse.json({
       success: true,
-      data: operators
+      data: mockOperators
     })
   } catch (error) {
     console.error('Erro ao listar MOD operators:', error)

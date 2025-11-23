@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server'
-import { getStats } from '@/lib/api-fallback'
+
+// Mock stats temporário
+const mockStats = {
+  total: 2,
+  inProgress: 1,
+  paused: 0,
+  completed: 0,
+  blocked: 1,
+}
 
 export async function GET() {
   try {
-    console.log('=== API STATS: Calculando estatísticas ===')
-
-    const stats = await getStats()
-
-    console.log('=== API STATS: Estatísticas calculadas:', stats)
+    console.log('=== API STATS: Retornando estatísticas mock ===')
 
     return NextResponse.json({
       success: true,
-      data: stats
+      data: mockStats
     })
   } catch (error) {
     console.error('=== API STATS: ERRO ===')

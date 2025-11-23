@@ -72,7 +72,8 @@ const mockOperators = [
 // Função para verificar se Prisma está disponível
 async function isPrismaAvailable(): Promise<boolean> {
   try {
-    await prisma.$connect()
+    // Tentar uma operação simples
+    await prisma.$queryRaw`SELECT 1`
     return true
   } catch (error) {
     console.warn('⚠️ Prisma não disponível, usando fallback:', error.message)
