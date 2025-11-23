@@ -89,6 +89,11 @@ export const StatusDistribution: React.FC<{ byStatus: Record<string, number>; to
   byStatus,
   total,
 }) => {
+  // Validar que byStatus é um objeto válido
+  if (!byStatus || typeof byStatus !== 'object' || Object.keys(byStatus).length === 0) {
+    return null
+  }
+
   const statusConfig = {
     quarantine: { label: '🔒 Em Quarentena', color: 'from-amber-500 to-amber-600' },
     released: { label: '✅ Liberado', color: 'from-emerald-500 to-emerald-600' },
@@ -99,7 +104,9 @@ export const StatusDistribution: React.FC<{ byStatus: Record<string, number>; to
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       {Object.entries(byStatus).map(([status, count], idx) => {
         const config = statusConfig[status as keyof typeof statusConfig]
-        const percentage = (count / total) * 100
+        if (!config) return null
+
+        const percentage = total > 0 ? (count / total) * 100 : 0
 
         return (
           <CardEntrance key={status} delay={idx * 50}>

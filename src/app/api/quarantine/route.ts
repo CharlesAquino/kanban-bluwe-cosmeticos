@@ -24,11 +24,12 @@ export async function GET() {
       updated_at: item.updatedAt,
     }))
 
-    return NextResponse.json({ success: true, data: transformedItems })
+    // Retornar array diretamente (conforme esperado pelo frontend)
+    return NextResponse.json(transformedItems)
   } catch (error) {
     console.error('Erro ao buscar itens em quarentena:', error)
     return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor' },
       { status: 500 }
     )
   }
