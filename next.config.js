@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // Gera pasta .next/standalone para deploy em Docker
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -8,16 +8,21 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-    optimizeCss: true,
     optimizePackageImports: ['lucide-react'],
   },
   images: {
     domains: ['localhost'],
     unoptimized: true,
   },
-  // Configuração para desenvolvimento (sem export estático)
   excludeDefaultMomentLocales: true,
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+  webpack: (config, { isServer }) => {
+    // Otimizar CSS processing
+    if (!isServer) {
+      config.optimization.minimize = true;
+    }
+    return config;
+  },
 };
 
 export default nextConfig;
