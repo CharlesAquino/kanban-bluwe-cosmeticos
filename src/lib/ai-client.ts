@@ -74,7 +74,27 @@ async function callOpenAI(messages: AIMessage[], options: AIOptions): Promise<AI
 async function callLlama(messages: AIMessage[], options: AIOptions): Promise<AIResult> {
   try {
     const { callLlama } = await import('./llama-client')
-    return await callLlama(messages, options)
+    
+    // Converter mensagens para formato Llama (sem 'system')
+    const llamaMessages = messages
+      .filter(msg => msg.role !== 'system') // Remove system messages
+      .map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content
+      }))
+    
+    // Se sobrar só system message, converter para user
+    if (llamaMessages.length === 0 && messages.length > 0) {
+      const systemMsg = messages.find(msg => msg.role === 'system')
+      if (systemMsg) {
+        llamaMessages.push({
+          role: 'user',
+          content: systemMsg.content
+        })
+      }
+    }
+    
+    return await callLlama(llamaMessages, options)
   } catch (error) {
     return {
       success: false,
