@@ -5,6 +5,7 @@ import {
   DndContext,
   DragEndEvent,
   DragOverEvent,
+  DragOverlay,
   DragStartEvent,
   PointerSensor,
   useSensor,
