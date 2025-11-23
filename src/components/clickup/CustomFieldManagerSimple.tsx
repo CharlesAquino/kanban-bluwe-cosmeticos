@@ -87,20 +87,20 @@ export const CustomFieldManagerSimple: React.FC = () => {
   const renderFieldValue = (field: SimpleCustomField) => {
     switch (field.type) {
       case 'TEXT':
-        return <Input placeholder="Texto..." className="h-8" />
+        return <Input placeholder="Digite o texto..." className="h-8" title="Campo de texto" />
       case 'NUMBER':
-        return <Input type="number" placeholder="0" className="h-8" />
+        return <Input type="number" placeholder="Digite um número..." className="h-8" title="Campo numérico" />
       case 'DATE':
-        return <Input type="date" className="h-8" />
+        return <Input type="date" className="h-8" title="Campo de data" />
       case 'BOOLEAN':
         return (
           <div className="flex items-center space-x-2">
-            <input type="checkbox" className="rounded" />
+            <input type="checkbox" className="rounded" title="Marcar como sim" />
             <Label className="text-sm">Sim</Label>
           </div>
         )
       default:
-        return <Input placeholder="Valor..." className="h-8" />
+        return <Input placeholder="Digite o valor..." className="h-8" title="Campo de valor" />
     }
   }
 
@@ -177,6 +177,7 @@ export const CustomFieldManagerSimple: React.FC = () => {
                 value={formData.type}
                 onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
                 className="w-full p-2 border rounded"
+                title="Selecione o tipo de campo"
               >
                 {fieldTypes.map(type => (
                   <option key={type.value} value={type.value}>
@@ -193,6 +194,7 @@ export const CustomFieldManagerSimple: React.FC = () => {
                 checked={formData.required}
                 onChange={(e) => setFormData(prev => ({ ...prev, required: e.target.checked }))}
                 className="rounded"
+                title="Marcar como obrigatório"
               />
               <Label htmlFor="required">Campo obrigatório</Label>
             </div>
