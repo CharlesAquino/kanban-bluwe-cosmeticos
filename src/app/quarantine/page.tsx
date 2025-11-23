@@ -117,13 +117,13 @@ export default function QuarantinePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 flex items-center justify-center">
-        <Card className="p-8 max-w-md w-full bg-white/80 backdrop-blur-sm border-amber-200">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <Card className="p-8 max-w-md w-full bg-white/80 backdrop-blur-sm border-blue-200">
           <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-amber-900 mb-2">Erro ao carregar quarentena</h3>
-            <p className="text-amber-700 text-sm mb-4">Não foi possível carregar os itens em quarentena</p>
-            <Button onClick={() => mutate()} className="bg-amber-500 hover:bg-amber-600">
+            <AlertCircle className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">Erro ao carregar quarentena</h3>
+            <p className="text-blue-700 text-sm mb-4">Não foi possível carregar os itens em quarentena</p>
+            <Button onClick={() => mutate()} className="bg-blue-500 hover:bg-blue-600">
               <RefreshCw className="w-4 h-4 mr-2" />
               Tentar novamente
             </Button>
@@ -134,9 +134,9 @@ export default function QuarantinePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header Hero */}
-      <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 text-white">
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex items-center justify-between">
             <div>
@@ -146,7 +146,7 @@ export default function QuarantinePage() {
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold">Centro de Quarentena</h1>
-                  <p className="text-amber-100">Gestão avançada de controle de qualidade</p>
+                  <p className="text-blue-100">Gestão avançada de controle de qualidade</p>
                 </div>
               </div>
             </div>
@@ -163,38 +163,26 @@ export default function QuarantinePage() {
       {/* Stats Dashboard */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-white/90 backdrop-blur-sm border-amber-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
+          <Card className="bg-white/90 backdrop-blur-sm border-blue-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-amber-600 text-sm font-medium">Itens em Quarentena</p>
-                <p className="text-3xl font-bold text-amber-900">{stats.total}</p>
+                <p className="text-blue-600 text-sm font-medium">Itens em Quarentena</p>
+                <p className="text-3xl font-bold text-blue-900">{stats.total}</p>
               </div>
-              <div className="p-3 bg-amber-100 rounded-full">
-                <Lock className="w-6 h-6 text-amber-600" />
+              <div className="p-3 bg-blue-100 rounded-full">
+                <Lock className="w-6 h-6 text-blue-600" />
               </div>
             </div>
           </Card>
 
-          <Card className="bg-white/90 backdrop-blur-sm border-orange-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
+          <Card className="bg-white/90 backdrop-blur-sm border-indigo-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-600 text-sm font-medium">Famílias</p>
-                <p className="text-3xl font-bold text-orange-900">{stats.families}</p>
+                <p className="text-indigo-600 text-sm font-medium">Famílias</p>
+                <p className="text-3xl font-bold text-indigo-900">{stats.families}</p>
               </div>
-              <div className="p-3 bg-orange-100 rounded-full">
-                <Archive className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-white/90 backdrop-blur-sm border-red-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-red-600 text-sm font-medium">Tempo Médio</p>
-                <p className="text-3xl font-bold text-red-900">{stats.avgDays}d</p>
-              </div>
-              <div className="p-3 bg-red-100 rounded-full">
-                <Timer className="w-6 h-6 text-red-600" />
+              <div className="p-3 bg-indigo-100 rounded-full">
+                <Archive className="w-6 h-6 text-indigo-600" />
               </div>
             </div>
           </Card>
@@ -202,29 +190,41 @@ export default function QuarantinePage() {
           <Card className="bg-white/90 backdrop-blur-sm border-purple-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-600 text-sm font-medium">Volume Total</p>
-                <p className="text-3xl font-bold text-purple-900">{stats.totalKg}kg</p>
+                <p className="text-purple-600 text-sm font-medium">Tempo Médio</p>
+                <p className="text-3xl font-bold text-purple-900">{stats.avgDays}d</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-full">
-                <BarChart3 className="w-6 h-6 text-purple-600" />
+                <Timer className="w-6 h-6 text-purple-600" />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="bg-white/90 backdrop-blur-sm border-slate-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-600 text-sm font-medium">Volume Total</p>
+                <p className="text-3xl font-bold text-slate-900">{stats.totalKg}kg</p>
+              </div>
+              <div className="p-3 bg-slate-100 rounded-full">
+                <BarChart3 className="w-6 h-6 text-slate-600" />
               </div>
             </div>
           </Card>
         </div>
 
         {/* Filters and Controls */}
-        <Card className="bg-white/90 backdrop-blur-sm border-amber-200 p-6 mb-8">
+        <Card className="bg-white/90 backdrop-blur-sm border-blue-200 p-6 mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
               {/* Search */}
               <div className="relative flex-1 sm:flex-initial">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-amber-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 w-4 h-4" />
                 <input
                   type="text"
                   placeholder="Buscar produtos..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white/80 backdrop-blur-sm w-full sm:w-64"
+                  className="pl-10 pr-4 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm w-full sm:w-64"
                 />
               </div>
 
@@ -233,7 +233,7 @@ export default function QuarantinePage() {
                 <select
                   value={selectedFamily}
                   onChange={(e) => setSelectedFamily(e.target.value)}
-                  className="appearance-none pl-4 pr-10 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white/80 backdrop-blur-sm cursor-pointer"
+                  className="appearance-none pl-4 pr-10 py-2 border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm cursor-pointer"
                   aria-label="Filtrar por família"
                   title="Filtrar produtos por família"
                 >
@@ -242,19 +242,19 @@ export default function QuarantinePage() {
                     <option key={family} value={family}>{family}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-amber-400 w-4 h-4 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 w-4 h-4 pointer-events-none" />
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               {/* View Mode */}
-              <div className="flex bg-amber-100 rounded-lg p-1">
+              <div className="flex bg-blue-100 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                     viewMode === 'grid' 
-                      ? 'bg-amber-500 text-white' 
-                      : 'text-amber-700 hover:bg-amber-200'
+                      ? 'bg-blue-500 text-white' 
+                      : 'text-blue-700 hover:bg-blue-200'
                   }`}
                   aria-label="Visualização em grade"
                   title="Exibir itens em grade"
@@ -265,8 +265,8 @@ export default function QuarantinePage() {
                   onClick={() => setViewMode('list')}
                   className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                     viewMode === 'list' 
-                      ? 'bg-amber-500 text-white' 
-                      : 'text-amber-700 hover:bg-amber-200'
+                      ? 'bg-blue-500 text-white' 
+                      : 'text-blue-700 hover:bg-blue-200'
                   }`}
                   aria-label="Visualização em lista"
                   title="Exibir itens em lista"
@@ -277,13 +277,13 @@ export default function QuarantinePage() {
 
               {/* Selection Controls */}
               {selectedItems.size > 0 && (
-                <div className="flex items-center gap-2 bg-amber-100 px-3 py-1 rounded-lg">
-                  <span className="text-amber-700 text-sm font-medium">
+                <div className="flex items-center gap-2 bg-blue-100 px-3 py-1 rounded-lg">
+                  <span className="text-blue-700 text-sm font-medium">
                     {selectedItems.size} selecionados
                   </span>
                   <button
                     onClick={clearSelection}
-                    className="text-amber-600 hover:text-amber-800"
+                    className="text-blue-600 hover:text-blue-800"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -294,7 +294,7 @@ export default function QuarantinePage() {
                 onClick={() => mutate()} 
                 variant="outline" 
                 size="sm"
-                className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Atualizar
@@ -307,20 +307,20 @@ export default function QuarantinePage() {
         {isLoading && (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <Loader2 className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-4" />
-              <p className="text-amber-600">Carregando itens em quarentena...</p>
+              <Loader2 className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-4" />
+              <p className="text-blue-600">Carregando itens em quarentena...</p>
             </div>
           </div>
         )}
 
         {/* Empty State */}
         {!isLoading && filteredItems.length === 0 && (
-          <Card className="bg-white/90 backdrop-blur-sm border-amber-200 p-12 text-center">
-            <Shield className="w-16 h-16 text-amber-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-amber-900 mb-2">
+          <Card className="bg-white/90 backdrop-blur-sm border-blue-200 p-12 text-center">
+            <Shield className="w-16 h-16 text-blue-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-blue-900 mb-2">
               {searchTerm || selectedFamily !== 'all' ? 'Nenhum item encontrado' : 'Nenhum item em quarentena'}
             </h3>
-            <p className="text-amber-600">
+            <p className="text-blue-600">
               {searchTerm || selectedFamily !== 'all' 
                 ? 'Tente ajustar os filtros de busca' 
                 : 'Todos os itens passaram pelo controle de qualidade'
@@ -392,7 +392,7 @@ function QuarantineItemCard({
           onClick={onSelect}
           className={`p-2 rounded-lg transition-all ${
             isSelected 
-              ? 'bg-amber-500 text-white' 
+              ? 'bg-blue-500 text-white' 
               : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
           }`}
           aria-label={isSelected ? "Item selecionado" : "Selecionar item"}
@@ -404,33 +404,33 @@ function QuarantineItemCard({
 
       {/* Status e Métricas */}
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="text-center p-3 bg-amber-50 rounded-lg border border-amber-200">
-          <p className="text-amber-600 text-xs font-medium uppercase tracking-wide">Volume</p>
-          <p className="text-amber-900 font-bold text-lg">{item.quantity_total || 0}kg</p>
+        <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-blue-600 text-xs font-medium uppercase tracking-wide">Volume</p>
+          <p className="text-blue-900 font-bold text-lg">{item.quantity_total || 0}kg</p>
         </div>
         
-        <div className="text-center p-3 bg-orange-50 rounded-lg border border-orange-200">
-          <p className="text-orange-600 text-xs font-medium uppercase tracking-wide">Envasado</p>
-          <p className="text-orange-900 font-bold text-lg">{item.quantity_envasado || 0}kg</p>
+        <div className="text-center p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+          <p className="text-indigo-600 text-xs font-medium uppercase tracking-wide">Envasado</p>
+          <p className="text-indigo-900 font-bold text-lg">{item.quantity_envasado || 0}kg</p>
         </div>
       </div>
 
       {/* Tempo em Quarentena */}
-      <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200 mb-4">
+      <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200 mb-4">
         <div className="flex items-center gap-2">
-          <Timer className="w-4 h-4 text-red-500" />
-          <span className="text-red-700 text-sm font-medium">Tempo em quarentena</span>
+          <Timer className="w-4 h-4 text-purple-500" />
+          <span className="text-purple-700 text-sm font-medium">Tempo em quarentena</span>
         </div>
-        <span className="text-red-900 font-bold">{daysInQuarantine} dias</span>
+        <span className="text-purple-900 font-bold">{daysInQuarantine} dias</span>
       </div>
 
       {/* Actions */}
       <div className="flex gap-2">
-        <Button size="sm" className="flex-1 bg-amber-500 hover:bg-amber-600 text-white">
+        <Button size="sm" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white">
           <Eye className="w-4 h-4 mr-2" />
           Detalhes
         </Button>
-        <Button size="sm" variant="outline" className="flex-1 border-green-200 text-green-700 hover:bg-green-50">
+        <Button size="sm" variant="outline" className="flex-1 border-emerald-200 text-emerald-700 hover:bg-emerald-50">
           <CheckCircle className="w-4 h-4 mr-2" />
           Aprovar
         </Button>
@@ -440,15 +440,17 @@ function QuarantineItemCard({
 
   if (viewMode === 'list') {
     return (
-      <Card className="bg-white/90 backdrop-blur-sm border-amber-200 p-6 hover:shadow-lg transition-all duration-300">
+      <Card className="bg-white/90 backdrop-blur-sm border-blue-200 p-6 hover:shadow-lg transition-all duration-300">
         <div className="flex items-center gap-6">
           <button
             onClick={onSelect}
             className={`p-2 rounded-lg transition-all ${
               isSelected 
-                ? 'bg-amber-500 text-white' 
+                ? 'bg-blue-500 text-white' 
                 : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
             }`}
+            aria-label={isSelected ? "Item selecionado" : "Selecionar item"}
+            title={isSelected ? "Deselecionar este item" : "Selecionar este item"}
           >
             {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
           </button>
@@ -468,29 +470,29 @@ function QuarantineItemCard({
             </div>
             
             <div className="flex items-center gap-6">
-              <div className="text-center p-2 bg-amber-50 rounded-lg border border-amber-200 min-w-[100px]">
-                <p className="text-amber-600 text-xs">Volume</p>
-                <p className="text-amber-900 font-bold">{item.quantity_total || 0}kg</p>
+              <div className="text-center p-2 bg-blue-50 rounded-lg border border-blue-200 min-w-[100px]">
+                <p className="text-blue-600 text-xs">Volume</p>
+                <p className="text-blue-900 font-bold">{item.quantity_total || 0}kg</p>
               </div>
               
-              <div className="text-center p-2 bg-orange-50 rounded-lg border border-orange-200 min-w-[100px]">
-                <p className="text-orange-600 text-xs">Envasado</p>
-                <p className="text-orange-900 font-bold">{item.quantity_envasado || 0}kg</p>
+              <div className="text-center p-2 bg-indigo-50 rounded-lg border border-indigo-200 min-w-[100px]">
+                <p className="text-indigo-600 text-xs">Envasado</p>
+                <p className="text-indigo-900 font-bold">{item.quantity_envasado || 0}kg</p>
               </div>
               
-              <div className="flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200">
-                <Timer className="w-4 h-4 text-red-500" />
-                <span className="text-red-700 text-sm">{daysInQuarantine} dias</span>
+              <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
+                <Timer className="w-4 h-4 text-purple-500" />
+                <span className="text-purple-700 text-sm">{daysInQuarantine} dias</span>
               </div>
             </div>
           </div>
           
           <div className="flex gap-2">
-            <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white">
+            <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-white">
               <Eye className="w-4 h-4 mr-2" />
               Detalhes
             </Button>
-            <Button size="sm" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50">
+            <Button size="sm" variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
               <CheckCircle className="w-4 h-4 mr-2" />
               Aprovar
             </Button>
@@ -501,7 +503,7 @@ function QuarantineItemCard({
   }
 
   return (
-    <Card className="bg-white/90 backdrop-blur-sm border-amber-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
+    <Card className="bg-white/90 backdrop-blur-sm border-blue-200 p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
       {cardContent}
     </Card>
   )
