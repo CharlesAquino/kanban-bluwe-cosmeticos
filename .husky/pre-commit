@@ -1,0 +1,19 @@
+#!/bin/sh
+# Husky pre-commit hook
+# Executa testes antes de cada commit
+
+echo "🧪 Executando testes pré-commit..."
+
+# Windows vs Unix
+if [ -f "scripts/pre-commit-test.ps1" ]; then
+  pwsh -Command "& './scripts/pre-commit-test.ps1'"
+else
+  bash scripts/pre-commit-test.sh
+fi
+
+if [ $? -ne 0 ]; then
+  echo "❌ Testes falharam. Commit bloqueado."
+  exit 1
+fi
+
+echo "✅ Testes passaram. Commit permitido."
