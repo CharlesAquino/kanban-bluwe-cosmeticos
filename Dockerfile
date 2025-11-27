@@ -17,7 +17,6 @@ COPY . .
 
 # Build da aplicação com todas as dependências disponíveis
 ENV NEXT_TELEMETRY_DISABLED 1
-RUN npx prisma generate
 RUN npm run build
 
 # Stage 3.5: Redis (opcional, pode ser um serviço externo)
