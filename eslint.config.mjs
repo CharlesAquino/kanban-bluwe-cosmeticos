@@ -30,7 +30,6 @@ const eslintConfig = [
       
       // TypeScript
       "@typescript-eslint/no-unused-vars": "error",
-      "@typescript-eslint/prefer-const": "error",
       "@typescript-eslint/no-explicit-any": "warn",
       
       // General
@@ -42,6 +41,13 @@ const eslintConfig = [
       // Styling
       "react/no-unknown-property": "error",
       "@next/next/no-page-custom-font": "error",
+    },
+  },
+  // Exceção: permitir console.log apenas no logger
+  {
+    files: ["src/lib/logger.ts"],
+    rules: {
+      "no-console": "off",
     },
   },
 ];

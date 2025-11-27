@@ -123,7 +123,11 @@ export const TagManager: React.FC<TagManagerProps> = ({
                 key={tag.id}
                 variant="secondary"
                 className="px-2 py-1 text-xs font-medium cursor-pointer hover:bg-gray-200"
-                style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                style={{ 
+                  backgroundColor: tag.color + '20', 
+                  color: tag.color 
+                }}
+                title={`Tag: ${tag.name} - Clique para remover`}
                 onClick={() => onTagUnselect?.(tag.id)}
               >
                 <Hash className="w-3 h-3 mr-1" />
@@ -144,6 +148,7 @@ export const TagManager: React.FC<TagManagerProps> = ({
               variant="outline"
               className="px-2 py-1 text-xs font-medium cursor-pointer hover:bg-gray-100"
               style={{ borderColor: tag.color, color: tag.color }}
+              title={`Adicionar tag: ${tag.name} (${tag.usageCount} usos)`}
               onClick={() => onTagSelect?.(tag.id)}
             >
               <Hash className="w-3 h-3 mr-1" />
