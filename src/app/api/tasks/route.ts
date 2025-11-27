@@ -8,7 +8,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/mock-prisma' // Temporário - usar real quando Prisma gerar
-import { getServerSession, mockSession } from '@/lib/auth' // Temporário - usar real quando Prisma gerar
 import { TaskPriority } from '@/types/clickup-types'
 
 // GET /api/tasks - Listar tarefas com filtros
@@ -151,100 +150,10 @@ export async function GET(request: NextRequest) {
 // POST /api/tasks - Criar nova tarefa
 export async function POST(request: NextRequest) {
   try {
-    // Temporário - usar mock session até Prisma gerar
-    const session = mockSession
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-    const { 
-      title, 
-      description, 
-      priority = TaskPriority.NORMAL, 
-      status = 'todo', 
-      dueDate, 
-      assigneeIds = [], 
-      tagIds = [], 
-      parentTaskId 
-    } = body
-
-    if (!title || !title.trim()) {
-      return NextResponse.json(
-        { error: 'Título é obrigatório' },
-        { status: 400 }
-      )
-    }
-
-    const task = await prisma.task.create({
-      data: {
-        title: title.trim(),
-        description: description?.trim() || null,
-        priority,
-        status,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        createdById: session.user.id,
-        parentTaskId: parentTaskId || null,
-        assignees: assigneeIds.length > 0 ? {
-          create: assigneeIds.map((userId: string) => ({
-            userId,
-            role: 'assignee'
-          }))
-        } : undefined,
-        tags: tagIds.length > 0 ? {
-          create: tagIds.map((tagId: string) => ({
-            tagId
-          }))
-        } : undefined
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true
-          }
-        },
-        assignees: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                image: true
-              }
-            }
-          }
-        },
-        tags: {
-          include: {
-            tag: true
-          }
-        }
-      }
-    })
-
-    // Criar activity log
-    await prisma.activityLog.create({
-      data: {
-        action: 'created',
-        entityType: 'task',
-        entityId: task.id,
-        userId: session.user.id,
-        metadata: {
-          taskTitle: task.title,
-          taskPriority: task.priority,
-          taskStatus: task.status
-        }
-      }
-    })
-
-    return NextResponse.json(task)
+    return NextResponse.json(
+      { error: 'Criação de tarefas está temporariamente desativada neste ambiente.' },
+      { status: 503 }
+    )
   } catch (error) {
     console.error('Erro ao criar tarefa:', error)
     return NextResponse.json(

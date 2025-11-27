@@ -8,7 +8,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/mock-prisma' // Temporário - usar real quando Prisma gerar
-import { getServerSession, mockSession } from '@/lib/auth' // Temporário - usar real quando Prisma gerar
 
 // GET /api/tags - Listar todas as tags
 export async function GET() {
@@ -52,59 +51,10 @@ export async function GET() {
 // POST /api/tags - Criar nova tag
 export async function POST(request: NextRequest) {
   try {
-    // Temporário - usar mock session até Prisma gerar
-    const session = mockSession
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-    const { name, color, description } = body
-
-    if (!name || !color) {
-      return NextResponse.json(
-        { error: 'Nome e cor são obrigatórios' },
-        { status: 400 }
-      )
-    }
-
-    // Verificar se tag já existe
-    const existingTag = await prisma.tag.findFirst({
-      where: { name: name.trim() }
-    })
-
-    if (existingTag) {
-      return NextResponse.json(
-        { error: 'Tag com este nome já existe' },
-        { status: 409 }
-      )
-    }
-
-    const tag = await prisma.tag.create({
-      data: {
-        name: name.trim(),
-        color,
-        description: description?.trim() || null,
-        createdById: session.user.id
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
-    })
-
-    return NextResponse.json({
-      ...tag,
-      usageCount: 0
-    })
+    return NextResponse.json(
+      { error: 'Criação de tags está temporariamente desativada neste ambiente.' },
+      { status: 503 }
+    )
   } catch (error) {
     console.error('Erro ao criar tag:', error)
     return NextResponse.json(
