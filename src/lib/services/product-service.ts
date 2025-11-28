@@ -177,6 +177,34 @@ export class ProductService {
   }
 
   /**
+   * Atualizar produto (dados básicos)
+   */
+  static async updateProduct(
+    productId: string,
+    data: {
+      name?: string
+      op?: string
+      batch?: string
+      quantity?: number
+      image?: string | null
+      createdById?: string
+      manufacturingDate?: Date
+      updatedById?: string
+      status?: ProductStatus
+      currentStage?: ProductStage
+    }
+  ) {
+    const product = await productQueries.update(productId, data)
+
+    // Invalidar cache
+    await CacheService.invalidateProductCache(productId)
+    await CacheService.invalidateProductsCache()
+    await CacheService.invalidateStatsCache()
+
+    return product
+  }
+
+  /**
    * Buscar histórico de estágios
    */
   static async getStageHistory(productId: string) {

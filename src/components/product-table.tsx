@@ -6,7 +6,8 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
@@ -53,9 +54,17 @@ export function ProductTable({
   )
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    // Mouse / pointer (desktop)
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 8,
+      },
+    }),
+    // Toque (mobile/tablet)
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 5,
       },
     })
   )

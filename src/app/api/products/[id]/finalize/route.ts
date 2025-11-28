@@ -74,6 +74,12 @@ export async function POST(
 
     console.log('✅ Semi-acabado criado:', semiFinished)
 
+    // Atualizar produto para status COMPLETED e estágio FINALIZADO
+    await ProductService.updateProduct(id, {
+      status: 'COMPLETED' as any,
+      currentStage: 'FINALIZADO' as any,
+    })
+
     return NextResponse.json(
       { success: true, data: semiFinished },
       { status: 201 }

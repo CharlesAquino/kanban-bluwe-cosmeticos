@@ -207,6 +207,48 @@ export const productQueries = {
   },
 
   /**
+   * Atualizar produto (dados básicos)
+   */
+  async update(
+    productId: string,
+    data: {
+      name?: string
+      op?: string
+      batch?: string
+      quantity?: number
+      image?: string | null
+      createdById?: string
+      manufacturingDate?: Date
+      updatedById?: string
+      status?: ProductStatus
+      currentStage?: ProductStage
+    }
+  ) {
+    const updateData: any = {
+      updatedAt: new Date(),
+    }
+
+    if (data.name !== undefined) updateData.name = data.name
+    if (data.op !== undefined) updateData.op = data.op
+    if (data.batch !== undefined) updateData.batch = data.batch
+    if (data.quantity !== undefined) updateData.quantity = data.quantity
+    if (data.image !== undefined) updateData.image = data.image
+    if (data.createdById !== undefined) updateData.createdById = data.createdById
+    if (data.manufacturingDate !== undefined) updateData.manufacturingDate = data.manufacturingDate
+    if (data.updatedById !== undefined) updateData.updatedById = data.updatedById
+    if (data.status !== undefined) updateData.status = data.status
+    if (data.currentStage !== undefined) updateData.currentStage = data.currentStage
+
+    const [updated] = await db
+      .update(products)
+      .set(updateData)
+      .where(eq(products.id, productId))
+      .returning()
+
+    return updated
+  },
+
+  /**
    * Buscar histórico de estágios
    */
   async getStageHistory(productId: string) {
