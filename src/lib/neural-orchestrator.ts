@@ -6,7 +6,7 @@
  */
 
 import { chatCompletion } from '@/mcp/openai'
-import { screenshot } from '@/mcp/playwright'
+// import { screenshot } from '@/mcp/playwright' // Temporarily disabled
 import { sendNotification } from '@/mcp/slack'
 import { createIssue } from '@/mcp/github'
 import { logInfo } from '@/mcp/fetch'
@@ -57,15 +57,15 @@ class NeuralOrchestrator {
 
     // Análise contextual com IA
     const context = await this.analyzeContext(event)
-    
+
     // Decisão baseada em regras + IA
     const decision = await this.makeDecision(event, context)
-    
+
     this.decisions.push(decision)
-    
+
     // Executar ações
     await this.executeDecision(decision, event)
-    
+
     return decision
   }
 
@@ -74,7 +74,7 @@ class NeuralOrchestrator {
    */
   private async analyzeContext(event: NeuralEvent): Promise<string> {
     const recentEvents = this.eventLog.slice(-10)
-    
+
     const { response } = await chatCompletion({
       messages: [
         {
@@ -257,14 +257,17 @@ Análise e recomendação:`
 
   private async screenshotAndValidate(event: NeuralEvent) {
     const productId = event.payload.productId || 'unknown'
-    await screenshot({
-      url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3002'}/semi-finished`,
-      name: `product-${productId}-finalized-${Date.now()}`
-    })
 
-    await logInfo('screenshot_taken', {
+    // Temporarily disabled - Playwright not available
+    // await screenshot({
+    //   url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3002'}/semi-finished`,
+    //   name: `product-${productId}-finalized-${Date.now()}`
+    // })
+
+    await logInfo('screenshot_planned', {
       productId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      note: 'Screenshot disabled - Playwright not configured'
     })
   }
 
