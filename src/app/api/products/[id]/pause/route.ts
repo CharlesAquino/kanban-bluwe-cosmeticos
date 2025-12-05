@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ProductService } from '@/lib/services/product-service'
+import { apiLog, apiError } from '@/lib/api-logger'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -11,8 +12,7 @@ export async function POST(
   try {
     const { id } = params
 
-    console.log('=== API PAUSE: Pausando produto ===')
-    console.log('Produto ID:', id)
+    apiLog('=== API PAUSE: Pausando produto ===', { productId: id })
 
     // Pausar produto
     const product = await ProductService.pauseProduction(id)
@@ -24,15 +24,14 @@ export async function POST(
       )
     }
 
-    console.log('✅ Produto pausado:', product)
+    apiLog('✅ Produto pausado', { productId: product.id, status: product.status })
 
     return NextResponse.json({
       success: true,
       data: product,
     })
   } catch (error) {
-    console.error('=== API PAUSE: ERRO ===')
-    console.error('Erro ao pausar produto:', error)
+    apiError('=== API PAUSE: ERRO ===', error)
 
     return NextResponse.json(
       {

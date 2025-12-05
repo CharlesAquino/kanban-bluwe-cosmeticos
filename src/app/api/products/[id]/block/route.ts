@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ProductService } from '@/lib/services/product-service'
+import { apiLog, apiError } from '@/lib/api-logger'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -13,8 +14,7 @@ export async function POST(
     const body = await request.json()
     const { reason } = body
 
-    console.log('=== API BLOCK: Bloqueando produto ===')
-    console.log('Dados recebidos:', { id, reason })
+    apiLog('=== API BLOCK: Bloqueando produto ===', { productId: id, reason })
 
     if (typeof reason !== 'string' || reason.trim().length < 3) {
       return NextResponse.json(
@@ -37,15 +37,14 @@ export async function POST(
       )
     }
 
-    console.log('✅ Produto bloqueado:', product)
+    apiLog('✅ Produto bloqueado', { productId: product.id, status: product.status, reason })
 
     return NextResponse.json({
       success: true,
       data: product,
     })
   } catch (error) {
-    console.error('=== API BLOCK: ERRO ===')
-    console.error('Erro ao bloquear produto:', error)
+    apiError('=== API BLOCK: ERRO ===', error)
 
     return NextResponse.json(
       {

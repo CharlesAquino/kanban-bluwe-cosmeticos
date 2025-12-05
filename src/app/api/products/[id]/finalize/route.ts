@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ProductService } from '@/lib/services/product-service'
 import { semiFinishedQueries } from '@/lib/db/queries/semi-finished'
+import { apiLog, apiError } from '@/lib/api-logger'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -12,21 +13,20 @@ export async function POST(
   try {
     const { id } = params
 
-    console.log('=== API FINALIZE: Finalizando produto ===')
-    console.log('Produto ID:', id)
+    apiLog('=== API FINALIZE: Finalizando produto ===', { productId: id })
 
     // Buscar produto
     const product = await ProductService.getProductById(id)
 
     if (!product) {
-      console.error('❌ Produto não encontrado:', id)
+      apiError('❌ Produto não encontrado', undefined, { productId: id })
       return NextResponse.json(
         { success: false, error: 'Produto não encontrado' },
         { status: 404 }
       )
     }
 
-    console.log('📋 Produto encontrado:', {
+    apiLog('📋 Produto encontrado', {
       id: product.id,
       name: product.name,
       currentStage: product.currentStage,
@@ -35,7 +35,7 @@ export async function POST(
 
     const stage = String(product.currentStage).toUpperCase()
     if (stage !== 'APROVADO' && stage !== 'FINALIZADO') {
-      console.error('❌ Produto não está em estágio aprovado:', stage)
+      apiError('❌ Produto não está em estágio aprovado', undefined, { stage, productId: id })
       return NextResponse.json(
         {
           success: false,
@@ -72,7 +72,7 @@ export async function POST(
       createdById: product.createdById,
     })
 
-    console.log('✅ Semi-acabado criado:', semiFinished)
+    apiLog('✅ Semi-acabado criado', { semiFinishedId: semiFinished.id, op: semiFinished.op, batch: semiFinished.batch })
 
     // Atualizar produto para status COMPLETED e estágio FINALIZADO
     await ProductService.updateProduct(id, {
@@ -85,8 +85,7 @@ export async function POST(
       { status: 201 }
     )
   } catch (error) {
-    console.error('=== API FINALIZE: ERRO ===')
-    console.error('Erro ao finalizar produto:', error)
+    apiError('=== API FINALIZE: ERRO ===', error)
     const message = error instanceof Error ? error.message : 'Erro desconhecido'
     return NextResponse.json(
       { success: false, error: 'Erro interno do servidor', details: message },
