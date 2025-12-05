@@ -7,13 +7,14 @@
 
 export const ENV = {
   // Ambiente Node
+  env: process.env.NODE_ENV || 'development',
   isDev: process.env.NODE_ENV === 'development',
   isTest: process.env.NODE_ENV === 'test',
   isProd: process.env.NODE_ENV === 'production',
-  
+
   // Railway specific
   isStaging: process.env.RAILWAY_ENVIRONMENT === 'staging',
-  
+
   // Configurações
   databaseUrl: process.env.DATABASE_URL,
   port: process.env.PORT || '3000',
@@ -33,15 +34,15 @@ export const ALLOW_MOCKS = false
  */
 export function validateEnvironment(): { valid: boolean; errors: string[] } {
   const errors: string[] = []
-  
+
   if (!ENV.databaseUrl) {
     errors.push('DATABASE_URL não configurada')
   }
-  
+
   if (ENV.isProd && !process.env.NEXTAUTH_SECRET) {
     errors.push('NEXTAUTH_SECRET não configurada em produção')
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
