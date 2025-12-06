@@ -59,6 +59,12 @@ export default function ModAdminPage() {
   const handleSaveOperator = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingOperator?.name.trim()) return
+    
+    const email = (editingOperator as any).email
+    if (!email || !email.trim()) {
+      alert('Email é obrigatório')
+      return
+    }
 
     setSavingOperator(true)
     try {
@@ -66,11 +72,9 @@ export default function ModAdminPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: editingOperator.id || undefined,
           name: editingOperator.name,
-          role: editingOperator.role,
-          isActive: editingOperator.isActive,
-          photo: editingOperator.photo ?? null,
+          email: email.trim(),
+          role: editingOperator.role || 'OPERATOR',
         }),
       })
       const json = await res.json()
@@ -150,10 +154,20 @@ export default function ModAdminPage() {
         {/* Operadores */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCog className="h-5 w-5" />
-              Operadores MOD
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <UserCog className="h-5 w-5" />
+                Operadores MOD
+              </CardTitle>
+              <Button
+                size="sm"
+                onClick={startNewOperator}
+                className="flex items-center gap-1"
+              >
+                <UserPlus className="h-4 w-4" />
+                Novo MOD
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loadingOperators && (
@@ -213,12 +227,27 @@ export default function ModAdminPage() {
             {editingOperator && (
               <form onSubmit={handleSaveOperator} className="space-y-3 border-t pt-3 mt-3">
                 <div className="space-y-1">
-                  <label className="block text-xs font-medium text-gray-700">Nome</label>
+                  <label className="block text-xs font-medium text-gray-700">Nome *</label>
                   <Input
                     value={editingOperator.name}
                     onChange={(e) =>
                       setEditingOperator((prev) => (prev ? { ...prev, name: e.target.value } : prev))
                     }
+                    placeholder="Ex: João Silva"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-gray-700">Email *</label>
+                  <Input
+                    type="email"
+                    value={(editingOperator as any).email || ''}
+                    onChange={(e) =>
+                      setEditingOperator((prev) =>
+                        prev ? { ...prev, email: e.target.value } as any : prev
+                      )
+                    }
+                    placeholder="Ex: joao.silva@empresa.com"
                     required
                   />
                 </div>
