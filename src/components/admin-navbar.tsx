@@ -35,11 +35,6 @@ export function AdminNavbar() {
   const pathname = usePathname()
   const [overviewDropdownOpen, setOverviewDropdownOpen] = useState(false)
 
-  // Não exibe o menu Admin na tela de login
-  if (pathname === '/admin/login') {
-    return null
-  }
-
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin"
     return pathname?.startsWith(href)
