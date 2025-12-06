@@ -191,12 +191,12 @@ export const taskAssignments = pgTable(
 export const taskTags = pgTable(
   'task_tags',
   {
-    task_id: text('task_id').notNull(), // Mapeado
-    tag_id: text('tag_id').notNull(), // Mapeado
-    created_at: timestamp('created_at').defaultNow().notNull(), // Mapeado
+    taskId: text('task_id').notNull(), // Propriedade taskId, Coluna task_id
+    tagId: text('tag_id').notNull(), // Propriedade tagId, Coluna tag_id
+    createdAt: timestamp('created_at').defaultNow().notNull(), // Propriedade createdAt, Coluna created_at
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.task_id, table.tag_id] }),
+    pk: primaryKey({ columns: [table.taskId, table.tagId] }),
   })
 )
 
@@ -204,13 +204,13 @@ export const taskDependencies = pgTable(
   'task_dependencies',
   {
     id: text('id').primaryKey(),
-    dependent_id: text('dependent_id').notNull(), // Mapeado
-    depends_on_id: text('depends_on_id').notNull(), // Mapeado
+    dependentId: text('dependent_id').notNull(),
+    dependsOnId: text('depends_on_id').notNull(),
     type: text('type').default('finish_to_start'),
-    created_at: timestamp('created_at').defaultNow().notNull(), // Mapeado
+    createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.dependent_id, table.depends_on_id] }),
+    pk: primaryKey({ columns: [table.dependentId, table.dependsOnId] }),
   })
 )
 
@@ -221,13 +221,13 @@ export const notifications = pgTable(
     title: text('title').notNull(),
     message: text('message').notNull(),
     type: text('type').notNull(),
-    user_id: text('user_id').notNull(), // Mapeado
-    is_read: boolean('is_read').default(false), // Mapeado
+    userId: text('user_id').notNull(),
+    isRead: boolean('is_read').default(false),
     metadata: jsonb('metadata'),
-    created_at: timestamp('created_at').defaultNow().notNull(), // Mapeado
+    createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
-    userIdx: index('notifications_user_id_idx').on(table.user_id),
+    userIdx: index('notifications_user_id_idx').on(table.userId),
   })
 )
 
@@ -236,17 +236,17 @@ export const activityLogs = pgTable(
   {
     id: text('id').primaryKey(),
     action: text('action').notNull(),
-    entity_type: text('entity_type').notNull(), // Mapeado
-    entity_id: text('entity_id').notNull(), // Mapeado
-    user_id: text('user_id').notNull(), // Mapeado
+    entityType: text('entity_type').notNull(),
+    entityId: text('entity_id').notNull(),
+    userId: text('user_id').notNull(),
     metadata: jsonb('metadata'),
-    created_at: timestamp('created_at').defaultNow().notNull(), // Mapeado
+    createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
-    userIdx: index('activity_logs_user_id_idx').on(table.user_id),
+    userIdx: index('activity_logs_user_id_idx').on(table.userId),
     entityIdx: index('activity_logs_entity_idx').on(
-      table.entity_type,
-      table.entity_id
+      table.entityType,
+      table.entityId
     ),
   })
 )
@@ -259,25 +259,25 @@ export const products = pgTable(
     op: text('op').notNull(),
     batch: text('batch').notNull(),
     quantity: real('quantity').notNull(),
-    current_stage: productStageEnum('current_stage').default('PRODUCAO_1KG'),
+    currentStage: productStageEnum('current_stage').default('PRODUCAO_1KG'),
     status: productStatusEnum('status').default('ACTIVE'),
     priority: integer('priority').default(1),
-    due_date: timestamp('due_date'),
+    dueDate: timestamp('due_date'),
     notes: text('notes'),
     image: text('image'),
-    manufacturing_date: timestamp('manufacturing_date').defaultNow(),
-    created_at: timestamp('created_at').defaultNow().notNull(),
-    updated_at: timestamp('updated_at').defaultNow().notNull(),
-    created_by_id: text('created_by_id').notNull(),
-    updated_by_id: text('updated_by_id'),
+    manufacturingDate: timestamp('manufacturing_date').defaultNow(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+    createdById: text('created_by_id').notNull(),
+    updatedById: text('updated_by_id'),
   },
   (table) => ({
     opBatchIdx: uniqueIndex('products_op_batch_idx').on(table.op, table.batch),
     opIdx: index('products_op_idx').on(table.op),
     batchIdx: index('products_batch_idx').on(table.batch),
-    stageIdx: index('products_current_stage_idx').on(table.current_stage),
+    stageIdx: index('products_current_stage_idx').on(table.currentStage),
     statusIdx: index('products_status_idx').on(table.status),
-    createdByIdx: index('products_created_by_id_idx').on(table.created_by_id),
+    createdByIdx: index('products_created_by_id_idx').on(table.createdById),
     priorityIdx: index('products_priority_idx').on(table.priority),
   })
 )
@@ -285,12 +285,12 @@ export const products = pgTable(
 export const productTags = pgTable(
   'product_tags',
   {
-    product_id: text('product_id').notNull(), // Mapeado
-    tag_id: text('tag_id').notNull(), // Mapeado
-    created_at: timestamp('created_at').defaultNow().notNull(), // Mapeado
+    productId: text('product_id').notNull(), // Propriedade productId, Coluna product_id
+    tagId: text('tag_id').notNull(), // Propriedade tagId, Coluna tag_id
+    createdAt: timestamp('created_at').defaultNow().notNull(), // Propriedade createdAt, Coluna created_at
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.product_id, table.tag_id] }),
+    pk: primaryKey({ columns: [table.productId, table.tagId] }),
   })
 )
 
