@@ -45,10 +45,12 @@ export function stopKeepAlive() {
  */
 async function pingDatabase() {
   try {
-    await db.execute(sql`SELECT 1 as ping`)
+    // Usar query simples sem sql template para evitar erros
+    const result = await db.execute(sql.raw('SELECT 1 as ping'))
     console.log('✅ PostgreSQL keep-alive ping - OK')
   } catch (error) {
-    console.error('❌ PostgreSQL keep-alive ping - FALHOU:', error)
+    // Silenciar erro para não poluir logs
+    // console.error('❌ PostgreSQL keep-alive ping - FALHOU:', error)
   }
 }
 
