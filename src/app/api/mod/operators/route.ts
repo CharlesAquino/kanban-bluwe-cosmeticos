@@ -14,9 +14,9 @@ export async function GET(_request: NextRequest) {
       ...(await userQueries.getByRole('MOD_OPERATOR')),
     ]
 
-    // Remover duplicados por id
+    // Remover duplicados por id e adicionar isActive: true
     const unique = Array.from(
-      new Map(operators.map((u: any) => [u.id, u])).values()
+      new Map(operators.map((u: any) => [u.id, { ...u, isActive: true }])).values()
     )
 
     return NextResponse.json({
