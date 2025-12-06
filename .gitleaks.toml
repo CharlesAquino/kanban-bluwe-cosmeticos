@@ -1,0 +1,76 @@
+# Gitleaks Configuration
+# Detecta segredos e credenciais expostas
+
+title = "Gitleaks Config - Kanban Bluwe"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "redis-url"
+description = "Redis connection string"
+regex = '''redis://[^:]+:[^@]+@[^\s"']+'''
+tags = ["redis", "secret", "database"]
+
+[[rules]]
+id = "postgresql-url"
+description = "PostgreSQL connection string"
+regex = '''postgresql://[^:]+:[^@]+@[^\s"']+'''
+tags = ["postgresql", "secret", "database"]
+
+[[rules]]
+id = "mongodb-url"
+description = "MongoDB connection string"
+regex = '''mongodb(\+srv)?://[^:]+:[^@]+@[^\s"']+'''
+tags = ["mongodb", "secret", "database"]
+
+[[rules]]
+id = "api-key-generic"
+description = "Generic API Key"
+regex = '''(?i)(api[_-]?key|apikey)['":\s=]+[a-zA-Z0-9]{20,}'''
+tags = ["api", "secret"]
+
+[[rules]]
+id = "openai-key"
+description = "OpenAI API Key"
+regex = '''sk-[a-zA-Z0-9]{48}'''
+tags = ["openai", "api", "secret"]
+
+[[rules]]
+id = "github-token"
+description = "GitHub Token"
+regex = '''gh[pousr]_[A-Za-z0-9_]{36,255}'''
+tags = ["github", "token", "secret"]
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Token"
+regex = '''eyJ[A-Za-z0-9-_=]+\.eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_.+/=]+'''
+tags = ["jwt", "token"]
+
+[[rules]]
+id = "private-key"
+description = "Private Key"
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'''
+tags = ["private-key", "secret"]
+
+[allowlist]
+description = "Allowlist for false positives"
+paths = [
+  '''\.env\.example$''',
+  '''\.env\.template$''',
+  '''README\.md$''',
+  '''SECURITY_ALERT\.md$''',
+  '''\.gitleaks\.toml$''',
+]
+
+regexes = [
+  '''redis://default:\*\*\*''',
+  '''postgresql://.*:\*\*\*''',
+  '''mongodb://.*:\*\*\*''',
+  '''COPIE_DO_RAILWAY''',
+  '''sua-chave-aqui''',
+  '''seu_token_aqui''',
+  '''example\.com''',
+  '''localhost''',
+]

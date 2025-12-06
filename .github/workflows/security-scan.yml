@@ -1,0 +1,152 @@
+# Security Scan - Detectar segredos e vulnerabilidades
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Rodar diariamente às 2am
+    - cron: '0 2 * * *'
+
+jobs:
+  secret-scan:
+    name: Scan for Secrets
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all branches
+      
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+      
+      - name: GitGuardian Scan
+        uses: GitGuardian/ggshield-action@v1
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+        with:
+          args: scan ci
+      
+      - name: Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+      
+      - name: Snyk Security Scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: ESLint Security Check
+        run: npx eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 0
+        continue-on-error: true
+      
+      - name: TypeScript Check
+        run: npx tsc --noEmit
+        continue-on-error: true
+
+  env-validation:
+    name: Environment Variables Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check for exposed secrets in code
+        run: |
+          echo "🔍 Scanning for exposed secrets..."
+          
+          # Patterns to search for
+          PATTERNS=(
+            "redis://.*:.*@"
+            "postgresql://.*:.*@"
+            "mongodb://.*:.*@"
+            "mysql://.*:.*@"
+            "REDIS_URL.*=.*redis://"
+            "DATABASE_URL.*=.*postgresql://"
+            "API_KEY.*=.*[a-zA-Z0-9]{20,}"
+            "SECRET.*=.*[a-zA-Z0-9]{20,}"
+            "TOKEN.*=.*[a-zA-Z0-9]{20,}"
+            "PASSWORD.*=.*[a-zA-Z0-9]{8,}"
+          )
+          
+          FOUND=0
+          for pattern in "${PATTERNS[@]}"; do
+            echo "Checking pattern: $pattern"
+            if grep -r -E "$pattern" --exclude-dir={node_modules,.next,.git} --exclude="*.{lock,log}" .; then
+              echo "❌ FOUND: $pattern"
+              FOUND=1
+            fi
+          done
+          
+          if [ $FOUND -eq 1 ]; then
+            echo "🚨 SECURITY ALERT: Exposed secrets found!"
+            exit 1
+          else
+            echo "✅ No exposed secrets found"
+          fi
+
+  notify:
+    name: Notify Security Issues
+    runs-on: ubuntu-latest
+    needs: [secret-scan, dependency-scan, code-quality, env-validation]
+    if: failure()
+    
+    steps:
+      - name: Send Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: '🚨 Security scan failed! Check GitHub Actions for details.'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()

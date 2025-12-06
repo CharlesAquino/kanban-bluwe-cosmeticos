@@ -1,6 +1,17 @@
 #!/bin/sh
 # Husky pre-commit hook
-# Executa testes antes de cada commit
+# Executa verificações de segurança e testes antes de cada commit
+
+echo "🔒 Executando verificações de segurança..."
+
+# Security check
+if [ -f "scripts/pre-commit-security.sh" ]; then
+  bash scripts/pre-commit-security.sh
+  if [ $? -ne 0 ]; then
+    echo "❌ Verificação de segurança falhou. Commit bloqueado."
+    exit 1
+  fi
+fi
 
 echo "🧪 Executando testes pré-commit..."
 
@@ -16,4 +27,4 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo "✅ Testes passaram. Commit permitido."
+echo "✅ Todas as verificações passaram. Commit permitido."
