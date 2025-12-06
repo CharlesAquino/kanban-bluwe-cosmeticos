@@ -127,7 +127,7 @@ export class HybridCache {
 #### A. Redis Configurado Localmente
 **Arquivo:** `.env.local`
 ```env
-REDIS_URL="redis://default:bDwOLmsjSHzfGRHIxyJaIBKqIqwwwtji@gondola.proxy.rlwy.net:29854"
+REDIS_URL="redis://default:***SENHA_REDIS***@gondola.proxy.rlwy.net:29854"
 ```
 
 #### B. Rota de Debug Criada
@@ -248,7 +248,7 @@ export async function GET() {
 ### URGENTE (Você precisa fazer)
 1. **Adicionar REDIS_URL no Railway**
    - Siga: `ADICIONAR_REDIS_RAILWAY.md`
-   - URL: `redis://default:bDwOLmsjSHzfGRHIxyJaIBKqIqwwwtji@redis.railway.internal:6379`
+   - URL: `redis://default:***SENHA_REDIS***@redis.railway.internal:6379`
    - Tempo: 5 minutos
    - Resultado: Performance 10x em produção
 

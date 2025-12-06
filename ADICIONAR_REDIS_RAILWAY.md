@@ -8,7 +8,7 @@
 ## 📋 COPIAR ESTA URL
 
 ```
-redis://default:bDwOLmsjSHzfGRHIxyJaIBKqIqwwwtji@redis.railway.internal:6379
+redis://default:***COPIE_DO_RAILWAY***@redis.railway.internal:6379
 ```
 
 ⚠️ **IMPORTANTE:** Esta é a URL **interna** do Railway (mais rápida e segura)
@@ -38,7 +38,7 @@ redis://default:bDwOLmsjSHzfGRHIxyJaIBKqIqwwwtji@redis.railway.internal:6379
 ### 5. Preencher os Campos
 ```
 Nome:  REDIS_URL
-Valor: redis://default:bDwOLmsjSHzfGRHIxyJaIBKqIqwwwtji@redis.railway.internal:6379
+Valor: redis://default:***COPIE_DO_RAILWAY***@redis.railway.internal:6379
 ```
 
 ### 6. Salvar
@@ -95,7 +95,7 @@ Valor: redis://default:bDwOLmsjSHzfGRHIxyJaIBKqIqwwwtji@redis.railway.internal:6
 ### Se não aparecer "Redis connected"
 
 **Possível causa 1:** URL incorreta
-- Verifique se copiou exatamente: `redis://default:bDwOLmsjSHzfGRHIxyJaIBKqIqwwwtji@redis.railway.internal:6379`
+- Verifique se copiou a URL completa do Railway (com a senha)
 - Não pode ter espaços extras
 
 **Possível causa 2:** Serviço Redis não está rodando

@@ -10,12 +10,12 @@ Da imagem que você mostrou, use uma destas URLs:
 
 ### Opção 1: URL Pública (Recomendado para desenvolvimento)
 ```
-redis://default:bDwOLmsjSHzfGRHIxyJaIBKqIqwwwtji@gondola.proxy.rlwy.net:29854
+redis://default:***COPIE_DO_RAILWAY***@gondola.proxy.rlwy.net:29854
 ```
 
 ### Opção 2: URL Interna (Para produção no Railway)
 ```
-redis://default:bDwOLmsjSHzfGRHIxyJaIBKqIqwwwtji@redis.railway.internal:6379
+redis://default:***COPIE_DO_RAILWAY***@redis.railway.internal:6379
 ```
 
 ---
@@ -42,7 +42,7 @@ Adicione no arquivo `.env.local`:
 
 ```env
 # Redis do Railway (URL pública)
-REDIS_URL="redis://default:bDwOLmsjSHzfGRHIxyJaIBKqIqwwwtji@gondola.proxy.rlwy.net:29854"
+REDIS_URL="redis://default:***COPIE_DO_RAILWAY***@gondola.proxy.rlwy.net:29854"
 ```
 
 **IMPORTANTE:** Não commite este arquivo no Git!
