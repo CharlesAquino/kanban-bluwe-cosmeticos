@@ -84,9 +84,9 @@ export const users = pgTable(
     password: text('password').notNull(),
     role: userRoleEnum('role').default('VIEWER'),
     image: text('image'),
-    emailVerified: timestamp('emailVerified'),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
-    updatedAt: timestamp('updatedAt').defaultNow().notNull(),
+    emailVerified: timestamp('email_verified'), // Mapeado
+    createdAt: timestamp('created_at').defaultNow().notNull(), // Mapeado
+    updatedAt: timestamp('updated_at').defaultNow().notNull(), // Mapeado
   },
   (table) => ({
     emailIdx: uniqueIndex('users_email_idx').on(table.email),
@@ -158,12 +158,12 @@ export const tasks = pgTable(
     description: text('description'),
     priority: taskPriorityEnum('priority').default('NORMAL'),
     status: text('status').default('todo'),
-    dueDate: timestamp('dueDate'),
-    completedAt: timestamp('completedAt'),
-    createdById: text('createdById').notNull(),
-    parentTaskId: text('parentTaskId'),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
-    updatedAt: timestamp('updatedAt').defaultNow().notNull(),
+    dueDate: timestamp('due_date'), // Mapeado
+    completedAt: timestamp('completed_at'), // Mapeado
+    createdById: text('created_by_id').notNull(), // Mapeado
+    parentTaskId: text('parent_task_id'), // Mapeado
+    createdAt: timestamp('created_at').defaultNow().notNull(), // Mapeado
+    updatedAt: timestamp('updated_at').defaultNow().notNull(), // Mapeado
   },
   (table) => ({
     createdByIdx: index('tasks_created_by_id_idx').on(table.createdById),
@@ -175,10 +175,10 @@ export const taskAssignments = pgTable(
   'task_assignments',
   {
     id: text('id').primaryKey(),
-    taskId: text('taskId').notNull(),
-    userId: text('userId').notNull(),
+    taskId: text('task_id').notNull(), // Mapeado
+    userId: text('user_id').notNull(), // Mapeado
     role: text('role').default('assignee'),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(), // Mapeado
   },
   (table) => ({
     taskUserIdx: uniqueIndex('task_assignments_task_user_idx').on(
@@ -191,12 +191,12 @@ export const taskAssignments = pgTable(
 export const taskTags = pgTable(
   'task_tags',
   {
-    taskId: text('taskId').notNull(),
-    tagId: text('tagId').notNull(),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    task_id: text('task_id').notNull(), // Mapeado
+    tag_id: text('tag_id').notNull(), // Mapeado
+    created_at: timestamp('created_at').defaultNow().notNull(), // Mapeado
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.taskId, table.tagId] }),
+    pk: primaryKey({ columns: [table.task_id, table.tag_id] }),
   })
 )
 
@@ -204,11 +204,14 @@ export const taskDependencies = pgTable(
   'task_dependencies',
   {
     id: text('id').primaryKey(),
-    dependentId: text('dependentId').notNull(),
-    dependsOnId: text('dependsOnId').notNull(),
+    dependent_id: text('dependent_id').notNull(), // Mapeado
+    depends_on_id: text('depends_on_id').notNull(), // Mapeado
     type: text('type').default('finish_to_start'),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
-  }
+    created_at: timestamp('created_at').defaultNow().notNull(), // Mapeado
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.dependent_id, table.depends_on_id] }),
+  })
 )
 
 export const notifications = pgTable(
@@ -218,13 +221,13 @@ export const notifications = pgTable(
     title: text('title').notNull(),
     message: text('message').notNull(),
     type: text('type').notNull(),
-    userId: text('userId').notNull(),
-    isRead: boolean('isRead').default(false),
+    user_id: text('user_id').notNull(), // Mapeado
+    is_read: boolean('is_read').default(false), // Mapeado
     metadata: jsonb('metadata'),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(), // Mapeado
   },
   (table) => ({
-    userIdx: index('notifications_user_id_idx').on(table.userId),
+    userIdx: index('notifications_user_id_idx').on(table.user_id),
   })
 )
 
@@ -233,17 +236,17 @@ export const activityLogs = pgTable(
   {
     id: text('id').primaryKey(),
     action: text('action').notNull(),
-    entityType: text('entityType').notNull(),
-    entityId: text('entityId').notNull(),
-    userId: text('userId').notNull(),
+    entity_type: text('entity_type').notNull(), // Mapeado
+    entity_id: text('entity_id').notNull(), // Mapeado
+    user_id: text('user_id').notNull(), // Mapeado
     metadata: jsonb('metadata'),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    created_at: timestamp('created_at').defaultNow().notNull(), // Mapeado
   },
   (table) => ({
-    userIdx: index('activity_logs_user_id_idx').on(table.userId),
+    userIdx: index('activity_logs_user_id_idx').on(table.user_id),
     entityIdx: index('activity_logs_entity_idx').on(
-      table.entityType,
-      table.entityId
+      table.entity_type,
+      table.entity_id
     ),
   })
 )
@@ -256,25 +259,25 @@ export const products = pgTable(
     op: text('op').notNull(),
     batch: text('batch').notNull(),
     quantity: real('quantity').notNull(),
-    currentStage: productStageEnum('currentStage').default('PRODUCAO_1KG'),
+    current_stage: productStageEnum('current_stage').default('PRODUCAO_1KG'),
     status: productStatusEnum('status').default('ACTIVE'),
     priority: integer('priority').default(1),
-    dueDate: timestamp('dueDate'),
+    due_date: timestamp('due_date'),
     notes: text('notes'),
     image: text('image'),
-    manufacturingDate: timestamp('manufacturingDate').defaultNow(),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
-    updatedAt: timestamp('updatedAt').defaultNow().notNull(),
-    createdById: text('createdById').notNull(),
-    updatedById: text('updatedById'),
+    manufacturing_date: timestamp('manufacturing_date').defaultNow(),
+    created_at: timestamp('created_at').defaultNow().notNull(),
+    updated_at: timestamp('updated_at').defaultNow().notNull(),
+    created_by_id: text('created_by_id').notNull(),
+    updated_by_id: text('updated_by_id'),
   },
   (table) => ({
     opBatchIdx: uniqueIndex('products_op_batch_idx').on(table.op, table.batch),
     opIdx: index('products_op_idx').on(table.op),
     batchIdx: index('products_batch_idx').on(table.batch),
-    stageIdx: index('products_current_stage_idx').on(table.currentStage),
+    stageIdx: index('products_current_stage_idx').on(table.current_stage),
     statusIdx: index('products_status_idx').on(table.status),
-    createdByIdx: index('products_created_by_id_idx').on(table.createdById),
+    createdByIdx: index('products_created_by_id_idx').on(table.created_by_id),
     priorityIdx: index('products_priority_idx').on(table.priority),
   })
 )
@@ -282,12 +285,12 @@ export const products = pgTable(
 export const productTags = pgTable(
   'product_tags',
   {
-    productId: text('productId').notNull(),
-    tagId: text('tagId').notNull(),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    product_id: text('product_id').notNull(), // Mapeado
+    tag_id: text('tag_id').notNull(), // Mapeado
+    created_at: timestamp('created_at').defaultNow().notNull(), // Mapeado
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.productId, table.tagId] }),
+    pk: primaryKey({ columns: [table.product_id, table.tag_id] }),
   })
 )
 
@@ -295,19 +298,19 @@ export const semiFinishedItems = pgTable(
   'semi_finished_items',
   {
     id: text('id').primaryKey(),
-    productId: text('productId'),
+    productId: text('product_id'), // Mapeado
     name: text('name').notNull(),
     family: text('family').default('Sem Família'),
     op: text('op').notNull(),
     batch: text('batch').notNull(),
-    quantityTotal: real('quantityTotal').notNull(),
-    quantityEnvasado: real('quantityEnvasado').default(0),
+    quantityTotal: real('quantity_total').notNull(), // Mapeado
+    quantityEnvasado: real('quantity_envasado').default(0), // Mapeado
     status: semiFinishedStatusEnum('status').default('AGUARDANDO'),
-    manufacturingDate: timestamp('manufacturingDate').defaultNow(),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
-    updatedAt: timestamp('updatedAt').defaultNow().notNull(),
-    createdById: text('createdById').notNull(),
-    updatedById: text('updatedById'),
+    manufacturingDate: timestamp('manufacturing_date').defaultNow(), // Mapeado
+    createdAt: timestamp('created_at').defaultNow().notNull(), // Mapeado
+    updatedAt: timestamp('updated_at').defaultNow().notNull(), // Mapeado
+    createdById: text('created_by_id').notNull(), // Mapeado
+    updatedById: text('updated_by_id'), // Mapeado
   },
   (table) => ({
     productIdx: index('semi_finished_items_product_id_idx').on(table.productId),
@@ -320,9 +323,9 @@ export const semiFinishedItems = pgTable(
 export const semiFinishedTags = pgTable(
   'semi_finished_tags',
   {
-    semiFinishedId: text('semiFinishedId').notNull(),
-    tagId: text('tagId').notNull(),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    semiFinishedId: text('semi_finished_id').notNull(), // Mapeado
+    tagId: text('tag_id').notNull(), // Mapeado
+    createdAt: timestamp('created_at').defaultNow().notNull(), // Mapeado
   },
   (table) => ({
     pk: primaryKey({ columns: [table.semiFinishedId, table.tagId] }),
@@ -333,14 +336,14 @@ export const semiFinishedBuckets = pgTable(
   'semi_finished_buckets',
   {
     id: text('id').primaryKey(),
-    semiFinishedId: text('semiFinishedId').notNull(),
-    sourceBucketId: text('sourceBucketId').notNull(),
-    bucketIndex: integer('bucketIndex').notNull(),
-    originalQuantityKg: real('originalQuantityKg').notNull(),
-    currentQuantityKg: real('currentQuantityKg').notNull(),
+    semiFinishedId: text('semi_finished_id').notNull(), // Mapeado
+    sourceBucketId: text('source_bucket_id').notNull(), // Mapeado
+    bucketIndex: integer('bucket_index').notNull(), // Mapeado
+    originalQuantityKg: real('original_quantity_kg').notNull(), // Mapeado
+    currentQuantityKg: real('current_quantity_kg').notNull(), // Mapeado
     status: text('status').default('available'),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
-    updatedAt: timestamp('updatedAt').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(), // Mapeado
+    updatedAt: timestamp('updated_at').defaultNow().notNull(), // Mapeado
   },
   (table) => ({
     semiFinishedIdx: index('semi_finished_buckets_semi_finished_id_idx').on(
@@ -353,13 +356,13 @@ export const stageHistory = pgTable(
   'stage_history',
   {
     id: text('id').primaryKey(),
-    productId: text('productId').notNull(),
+    productId: text('product_id').notNull(), // Mapeado para product_id
     stage: productStageEnum('stage').notNull(),
-    startTime: timestamp('startTime').notNull(),
-    endTime: timestamp('endTime'),
+    startTime: timestamp('start_time').notNull(), // Mapeado para start_time
+    endTime: timestamp('end_time'), // Mapeado para end_time
     mod: integer('mod').notNull(),
     notes: text('notes'),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(), // Mapeado para created_at
   },
   (table) => ({
     productIdx: index('stage_history_product_id_idx').on(table.productId),
@@ -370,19 +373,19 @@ export const hourlyControls = pgTable(
   'hourly_controls',
   {
     id: text('id').primaryKey(),
-    productId: text('productId').notNull(),
-    productName: text('productName').notNull(),
+    productId: text('product_id').notNull(), // Mapeado
+    productName: text('product_name').notNull(), // Mapeado
     stage: productStageEnum('stage').notNull(),
     operator: text('operator').notNull(),
     shift: text('shift').notNull(),
-    targetQuantity: real('targetQuantity').notNull(),
-    actualQuantity: real('actualQuantity').notNull(),
+    targetQuantity: real('target_quantity').notNull(), // Mapeado
+    actualQuantity: real('actual_quantity').notNull(), // Mapeado
     efficiency: integer('efficiency').notNull(),
     status: text('status').notNull(),
     notes: text('notes'),
     date: timestamp('date').notNull(),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
-    updatedAt: timestamp('updatedAt').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(), // Mapeado
+    updatedAt: timestamp('updated_at').defaultNow().notNull(), // Mapeado
   },
   (table) => ({
     productIdx: index('hourly_controls_product_id_idx').on(table.productId),
