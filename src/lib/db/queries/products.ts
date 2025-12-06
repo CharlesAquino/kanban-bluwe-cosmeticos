@@ -18,33 +18,55 @@ export const productQueries = {
     quantity: number
     createdById: string
   }) {
+    console.log('[DB] Criando produto:', data)
     const now = new Date()
 
-    const [product] = await db
-      .insert(products)
-      .values({
-        id: `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: data.name,
-        op: data.op,
-        batch: data.batch,
-        quantity: data.quantity,
-        currentStage: 'PRODUCAO_1KG',
-        status: 'ACTIVE',
-        createdById: data.createdById,
-        manufacturingDate: now,
+    try {
+      const [product] = await db
+        .insert(products)
+        .values({
+          id: `prod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: data.name,
+          op: data.op,
+          batch: data.batch,
+          quantity: data.quantity,
+          currentStage: 'PRODUCAO_1KG',
+          status: 'ACTIVE',
+          createdById: data.createdById,
+          manufacturingDate: now,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning()
+
+      console.log('[DB] Produto criado com sucesso:', product.id)
+
+      // Criar primeiro estágio
+      await db.insert(stageHistory).values({
+        id: `stage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        productId: product.id,
+        stage: 'PRODUCAO_1KG',
+        startTime: now,
+        mod: 1,
+        createdAt: now,
       })
-      .returning()
 
-    // Criar primeiro estágio
-    await db.insert(stageHistory).values({
-      id: `stage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      productId: product.id,
-      stage: 'PRODUCAO_1KG',
-      startTime: now,
-      mod: 1,
-    })
+      return product
+    } catch (error: any) {
+      console.error('[DB] Erro ao criar produto:', error)
+      
+      // Verificar violação de constraint unique
+      if (error.code === '23505') { // Postgres unique violation code
+        throw new Error(`Já existe um produto com a OP ${data.op} e Lote ${data.batch}`)
+      }
+      
+      // Verificar violação de foreign key (createdById)
+      if (error.code === '23503') { // Postgres foreign key violation code
+        throw new Error(`Operador MOD não encontrado (ID: ${data.createdById})`)
+      }
 
-    return product
+      throw error
+    }
   },
 
   /**
