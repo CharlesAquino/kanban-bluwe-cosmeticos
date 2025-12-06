@@ -178,7 +178,7 @@ await sendNotification({
 
 **Configuração:**
 ```env
-GITHUB_TOKEN=ghp_...
+GITHUB_TOKEN=seu_github_token_aqui
 GITHUB_REPO=bluwe/kanban-production
 ```
 
@@ -326,7 +326,7 @@ NEURAL_ENABLED=true  # Habilita sistema neural (padrão: true)
 # Exemplos de configuração (use placeholders seguros)
 OPENAI_API_KEY=sk-seu-chave-aqui
 SLACK_WEBHOOK=https://hooks.slack.com/services/TXXXX/BXXXX/XXXXXXXX
-GITHUB_TOKEN=ghp_seu_token_aqui
+GITHUB_TOKEN=seu_github_token_aqui
 GITHUB_REPO=bluwe/kanban-production
 
 # Playwright (Opcional)

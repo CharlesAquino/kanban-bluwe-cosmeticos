@@ -61,7 +61,10 @@ paths = [
   '''\.env\.template$''',
   '''README\.md$''',
   '''SECURITY_ALERT\.md$''',
+  '''SECURITY_AUTOMATION\.md$''',
   '''\.gitleaks\.toml$''',
+  '''scripts/pre-commit-security\.(sh|ps1)$''',
+  '''node_modules/''',
 ]
 
 regexes = [
@@ -71,6 +74,10 @@ regexes = [
   '''COPIE_DO_RAILWAY''',
   '''sua-chave-aqui''',
   '''seu_token_aqui''',
+  '''seu_github_token_aqui''',
   '''example\.com''',
   '''localhost''',
+  '''ghp_\[a-zA-Z0-9\]\{36\}''',
+  '''sk-\[a-zA-Z0-9\]\{48\}''',
+  '''AKIA\[0-9A-Z\]\{16\}''',
 ]
