@@ -101,14 +101,24 @@ export async function POST(request: NextRequest) {
     
     console.log('[MOD] Criando operador com role:', role)
 
-    const user = await userQueries.create({
-      email: String(email).trim().toLowerCase(),
-      name: String(name).trim(),
-      password: placeholderPassword,
-      role: String(role).toUpperCase(),
-    })
-
-    console.log('[MOD] Operador criado com sucesso:', user.id)
+    let user
+    try {
+      user = await userQueries.create({
+        email: String(email).trim().toLowerCase(),
+        name: String(name).trim(),
+        password: placeholderPassword,
+        role: String(role).toUpperCase(),
+      })
+      console.log('[MOD] Operador criado com sucesso:', user.id)
+    } catch (createError) {
+      console.error('[MOD] Erro específico no userQueries.create:', createError)
+      console.error('[MOD] Dados enviados:', {
+        email: String(email).trim().toLowerCase(),
+        name: String(name).trim(),
+        role: String(role).toUpperCase(),
+      })
+      throw createError
+    }
 
     return NextResponse.json(
       {
