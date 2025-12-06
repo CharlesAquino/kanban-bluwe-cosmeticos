@@ -1,15 +1,9 @@
-/**
- * SISTEMA DE ESTADO GLOBAL - KANBAN BLUWE COSMÉTICOS
- *
- * Contexto global otimizado para evitar loops infinitos.
- * Aplicando princípios de clean code e debugging estratégico.
- */
-
 'use client'
 
-import { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
-import type { Product, HourlyControl, ProductStage, ProductStatus } from '@/lib/types-modern'
+import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode, useMemo } from 'react'
+import type { Product, HourlyControl, ProductStage, ProductStatus } from '@/lib/types'
 import { loadProducts } from '@/lib/product-operations'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 // Tipos necessários
 type MonitoringData = {
@@ -24,7 +18,6 @@ type MonitoringData = {
   lastUpdate: string
 }
 
-// Tipo para eventos do processo
 type ProcessEvent = {
   id: string
   type: string
@@ -32,9 +25,8 @@ type ProcessEvent = {
   data?: Record<string, unknown>
 }
 
-// Interfaces melhoradas para type safety
+// Interface GlobalState
 export interface GlobalState {
-  // Dados de produção
   products: Product[]
   stats: {
     total: number
@@ -43,97 +35,60 @@ export interface GlobalState {
     completed: number
     blocked: number
   }
-
-  // Controle hora a hora
   monitoringData: MonitoringData[]
   hourlyControls: HourlyControl[]
-
-  // Sistema de monitoramento
   processHistory: ProcessEvent[]
-
-  // Configurações do sistema
   settings: {
     autoRefresh: boolean
     refreshInterval: number
     theme: 'light' | 'dark'
   }
-
-  // Estados de controle
   loading: boolean
   error: string | null
   timestamp: number
   lastUpdate: number
 }
 
-// Ações para o reducer
+// Actions
 type GlobalAction =
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'SET_PRODUCTS'; payload: Product[] }
-  | { type: 'SET_STATS'; payload: GlobalState['stats'] }
   | { type: 'SET_MONITORING_DATA'; payload: MonitoringData[] }
   | { type: 'SET_HOURLY_CONTROLS'; payload: HourlyControl[] }
   | { type: 'ADD_PROCESS_EVENT'; payload: ProcessEvent }
   | { type: 'SET_SETTINGS'; payload: Partial<GlobalState['settings']> }
-  | { type: 'UPDATE_TIMESTAMP' }
 
-// Estado inicial - autoRefresh DESABILITADO por padrão para evitar loops
 const initialState: GlobalState = {
   products: [],
-  stats: {
-    total: 0,
-    inProgress: 0,
-    paused: 0,
-    completed: 0,
-    blocked: 0
-  },
+  stats: { total: 0, inProgress: 0, paused: 0, completed: 0, blocked: 0 },
   monitoringData: [],
   hourlyControls: [],
   processHistory: [],
   settings: {
-    autoRefresh: false, // ❌ DESABILITADO por padrão para evitar loops
+    autoRefresh: true, // React Query handles this efficiently
     refreshInterval: 30000,
     theme: 'light'
   },
-  loading: false,
+  loading: true,
   error: null,
   timestamp: Date.now(),
   lastUpdate: Date.now()
 }
 
-// Reducer otimizado
+// Reducer para estados locais (não-servidor)
 function globalReducer(state: GlobalState, action: GlobalAction): GlobalState {
   switch (action.type) {
-    case 'SET_LOADING':
-      return { ...state, loading: action.payload }
-    case 'SET_ERROR':
-      return { ...state, error: action.payload }
-    case 'SET_PRODUCTS':
-      return { ...state, products: action.payload }
-    case 'SET_STATS':
-      return { ...state, stats: action.payload }
     case 'SET_MONITORING_DATA':
       return { ...state, monitoringData: action.payload }
     case 'SET_HOURLY_CONTROLS':
       return { ...state, hourlyControls: action.payload }
     case 'ADD_PROCESS_EVENT':
-      return {
-        ...state,
-        processHistory: [action.payload, ...state.processHistory].slice(0, 100) // Limitar a 100 entradas
-      }
+      return { ...state, processHistory: [action.payload, ...state.processHistory].slice(0, 100) }
     case 'SET_SETTINGS':
-      return {
-        ...state,
-        settings: { ...state.settings, ...action.payload }
-      }
-    case 'UPDATE_TIMESTAMP':
-      return { ...state, timestamp: Date.now(), lastUpdate: Date.now() }
+      return { ...state, settings: { ...state.settings, ...action.payload } }
     default:
       return state
   }
 }
 
-// Contexto
 const GlobalContext = createContext<{
   state: GlobalState
   dispatch: React.Dispatch<GlobalAction>
@@ -145,94 +100,69 @@ const GlobalContext = createContext<{
   }
 } | null>(null)
 
-// Provider otimizado
 export function GlobalProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(globalReducer, initialState)
+  const [localState, dispatch] = useReducer(globalReducer, initialState)
+  const queryClient = useQueryClient()
 
-  // Carregar dados - integrado às APIs reais
-  const loadAllData = useCallback(async () => {
-    // Watchdog timer handle, visible to finally
-    let watchdog: ReturnType<typeof setTimeout> | null = null
-    try {
-      console.log('🔄 Iniciando carregamento de dados...')
+  // React Query: Fetching Products & Stats
+  const {
+    data: fetchedData,
+    isLoading,
+    error,
+    refetch,
+    isRefetching
+  } = useQuery({
+    queryKey: ['products'],
+    queryFn: loadProducts,
+    refetchInterval: localState.settings.autoRefresh ? localState.settings.refreshInterval : false,
+    staleTime: 5000, // 5 segundos
+    retry: 2, // Tentar 2 vezes antes de falhar
+  })
 
-      dispatch({ type: 'SET_LOADING', payload: true })
-      dispatch({ type: 'SET_ERROR', payload: null })
+  // Monitorar timeout de loading (cold start do banco)
+  useEffect(() => {
+    if (!isLoading) return
 
-      // Watchdog: falhar com timeout se o carregamento travar
-      watchdog = setTimeout(() => {
-        console.warn('⏱️ Timeout no carregamento global (watchdog)')
-        dispatch({ type: 'SET_ERROR', payload: 'Timeout no carregamento global' })
-        dispatch({ type: 'SET_LOADING', payload: false })
-      }, 12000)
+    const timeoutId = setTimeout(() => {
+      console.warn('⚠️ Loading está demorando mais de 12 segundos - possível cold start do PostgreSQL')
+      console.warn('💡 Aguarde mais alguns segundos ou recarregue a página')
+    }, 12000)
 
-      // Carregar dados das APIs reais
-      const { products, stats } = await loadProducts()
-      dispatch({ type: 'SET_PRODUCTS', payload: products })
-      dispatch({ type: 'SET_STATS', payload: stats })
+    return () => clearTimeout(timeoutId)
+  }, [isLoading])
 
-      // Dados de monitoramento (placeholder vazio até termos API)
-      dispatch({ type: 'SET_MONITORING_DATA', payload: [] })
-
-
-      dispatch({ type: 'UPDATE_TIMESTAMP' })
-      console.log('✅ Todos os dados carregados com sucesso!')
-    } catch (error) {
-      console.error('❌ Erro ao carregar dados:', error)
-      dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Erro desconhecido' })
-    } finally {
-      // Limpar watchdog para evitar disparo indevido
-      if (watchdog) clearTimeout(watchdog)
-      dispatch({ type: 'SET_LOADING', payload: false })
+  // Derived State: Combine fetched data with local state
+  const computedState: GlobalState = useMemo(() => {
+    return {
+      ...localState,
+      products: fetchedData?.products || [],
+      stats: fetchedData?.stats || initialState.stats,
+      loading: isLoading || isRefetching,
+      error: error instanceof Error ? error.message : (error ? String(error) : null),
+      lastUpdate: Date.now()
     }
-  }, [])
+  }, [localState, fetchedData, isLoading, isRefetching, error])
 
-  // Função de refresh rápida
+  // Backward Compatibility Actions
+  const loadAllData = useCallback(async () => {
+    await refetch()
+  }, [refetch])
+
   const refreshData = useCallback(async () => {
-    console.log('🔄 Executando refresh manual...')
-    await loadAllData()
-  }, [loadAllData])
+    await refetch()
+  }, [refetch])
 
-  // Atualizar configurações
   const updateSettings = useCallback((settings: Partial<GlobalState['settings']>) => {
-    console.log('⚙️ Atualizando configurações:', settings)
     dispatch({ type: 'SET_SETTINGS', payload: settings })
   }, [])
 
-  // Limpar erro
   const clearError = useCallback(() => {
-    console.log('🧹 Limpando erro...')
-    dispatch({ type: 'SET_ERROR', payload: null })
+    // React Query manages error state, but we can reset the query if needed
+    // or just ignore if it's purely UI
   }, [])
 
-  // Carregar dados iniciais - apenas uma vez - CORRIGIDO
-  useEffect(() => {
-    console.log('🚀 Inicializando contexto global...')
-    loadAllData()
-  }, [loadAllData]) // ✅ Dependência correta - loadAllData está memoizado
-
-  // Auto-refresh se habilitado - versão segura - CORRIGIDO
-  useEffect(() => {
-    console.log('⏰ Configurando auto-refresh:', state.settings.autoRefresh, state.settings.refreshInterval)
-
-    if (!state.settings.autoRefresh) {
-      console.log('⏸️ Auto-refresh desabilitado')
-      return
-    }
-
-    const interval = setInterval(() => {
-      console.log('🔄 Auto-refresh executando...')
-      refreshData()
-    }, state.settings.refreshInterval)
-
-    return () => {
-      console.log('🛑 Limpando intervalo de auto-refresh')
-      clearInterval(interval)
-    }
-  }, [state.settings.autoRefresh, state.settings.refreshInterval, refreshData]) // ✅ Todas dependências corretas
-
   const value = {
-    state,
+    state: computedState,
     dispatch,
     actions: {
       loadAllData,
@@ -249,22 +179,18 @@ export function GlobalProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// Hook para usar o contexto global
+// Hooks permanecem iguais
 export function useGlobalState() {
   const context = useContext(GlobalContext)
-  if (!context) {
-    throw new Error('useGlobalState deve ser usado dentro de GlobalProvider')
-  }
+  if (!context) throw new Error('useGlobalState deve ser usado dentro de GlobalProvider')
   return context
 }
 
-// Hook para acessar apenas o estado
 export function useGlobalData() {
   const { state } = useGlobalState()
   return state
 }
 
-// Hook para acessar apenas as ações
 export function useGlobalActions() {
   const { actions } = useGlobalState()
   return actions

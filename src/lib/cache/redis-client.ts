@@ -31,10 +31,14 @@ if (!globalForRedis.redis) {
     console.warn('⚠️ Redis disconnected')
   })
 
-  // Conectar ao iniciar
-  redis.connect().catch((err) => {
-    console.error('Failed to connect to Redis:', err)
-  })
+  // Conectar apenas se REDIS_URL estiver configurado
+  if (process.env.REDIS_URL && process.env.REDIS_URL !== 'redis://localhost:6379') {
+    redis.connect().catch((err) => {
+      console.error('Failed to connect to Redis:', err)
+    })
+  } else {
+    console.log('⚠️ Redis não configurado (REDIS_URL ausente) - usando fallback sem cache')
+  }
 
   globalForRedis.redis = redis
 } else {
@@ -56,6 +60,7 @@ export const cacheKeys = {
 }
 
 export async function getCache<T>(key: string): Promise<T | null> {
+  if (!redis.isOpen) return null // Fail fast if not connected
   try {
     const data = await redis.get(key)
     return data ? JSON.parse(data) : null
@@ -70,6 +75,7 @@ export async function setCache<T>(
   value: T,
   ttl: number = 3600 // 1 hora por padrão
 ): Promise<void> {
+  if (!redis.isOpen) return // Fail fast
   try {
     await redis.setEx(key, ttl, JSON.stringify(value))
   } catch (error) {
@@ -78,6 +84,7 @@ export async function setCache<T>(
 }
 
 export async function deleteCache(key: string): Promise<void> {
+  if (!redis.isOpen) return // Fail fast
   try {
     await redis.del(key)
   } catch (error) {
@@ -86,6 +93,7 @@ export async function deleteCache(key: string): Promise<void> {
 }
 
 export async function invalidatePattern(pattern: string): Promise<void> {
+  if (!redis.isOpen) return // Fail fast
   try {
     const keys = await redis.keys(pattern)
     if (keys.length > 0) {

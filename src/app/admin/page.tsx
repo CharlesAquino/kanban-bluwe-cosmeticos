@@ -20,13 +20,7 @@ const adminPages = [
     icon: Users,
     color: 'from-blue-500 to-blue-600'
   },
-  {
-    href: '/admin/kanban',
-    title: 'Admin Kanban',
-    description: 'Controlar fluxo de produção e finalizar produtos para semi-acabados',
-    icon: Settings,
-    color: 'from-purple-500 to-purple-600'
-  },
+
   {
     href: '/semi-finished',
     title: 'Semi-acabados Admin',
@@ -88,7 +82,7 @@ export default function AdminHomePage() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-600 mb-4">
-                Acesse as páginas de visualização e operação do sistema para acompanhar produção, 
+                Acesse as páginas de visualização e operação do sistema para acompanhar produção,
                 qualidade e métricas em tempo real.
               </p>
               <Link href="/">

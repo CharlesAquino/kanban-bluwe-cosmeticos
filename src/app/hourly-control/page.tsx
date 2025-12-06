@@ -1,8 +1,8 @@
- 'use client'
+'use client'
 
- import { useState, useEffect, useCallback, useMemo } from 'react'
- import useSWR from 'swr'
- import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import useSWR from 'swr'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -37,7 +37,7 @@ import Link from 'next/link'
 import { loadProductsAndStats } from '@/lib/product-operations'
 import { useProcessHistory } from '@/hooks/use-process-history'
 import type { Product, StageHistory } from '@/lib/types'
-import type { ProductStage, ProductStatus } from '@/lib/types-modern'
+import type { ProductStage, ProductStatus } from '@/lib/types'
 import type { ModOperator } from '@/lib/mod-types'
 import { SkeletonTable } from '@/components/skeletons'
 
@@ -386,7 +386,7 @@ export default function HourlyControlPage() {
                 <p className="text-xs text-slate-500 mt-1">Última atualização: {lastUpdate.toLocaleTimeString('pt-BR')}</p>
               </div>
             </div>
-            
+
             <nav className="flex items-center gap-4">
               {/* Dropdown Overview */}
               <div className="relative z-50">
@@ -579,11 +579,10 @@ export default function HourlyControlPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${
-                monitoringData.length > 0
+              <div className={`text-2xl font-bold ${monitoringData.length > 0
                   ? getEfficiencyColor(monitoringData.reduce((acc, m) => acc + m.efficiency, 0) / monitoringData.length)
                   : 'text-gray-600'
-              }`}>
+                }`}>
                 {monitoringData.length > 0
                   ? Math.round(monitoringData.reduce((acc, m) => acc + m.efficiency, 0) / monitoringData.length)
                   : 0}%
@@ -935,19 +934,17 @@ export default function HourlyControlPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center gap-3">
-                        <div className={`p-3 rounded-full ${
-                          summary.efficiencyTrend === 'up' ? 'bg-green-100' :
-                          summary.efficiencyTrend === 'down' ? 'bg-red-100' : 'bg-gray-100'
-                        }`}>
-                          <TrendingUp className={`h-5 w-5 ${
-                            summary.efficiencyTrend === 'up' ? 'text-green-600' :
-                            summary.efficiencyTrend === 'down' ? 'text-red-600' : 'text-gray-600'
-                          }`} />
+                        <div className={`p-3 rounded-full ${summary.efficiencyTrend === 'up' ? 'bg-green-100' :
+                            summary.efficiencyTrend === 'down' ? 'bg-red-100' : 'bg-gray-100'
+                          }`}>
+                          <TrendingUp className={`h-5 w-5 ${summary.efficiencyTrend === 'up' ? 'text-green-600' :
+                              summary.efficiencyTrend === 'down' ? 'text-red-600' : 'text-gray-600'
+                            }`} />
                         </div>
                         <div>
                           <p className="font-medium capitalize">
                             {summary.efficiencyTrend === 'up' ? 'Melhorando' :
-                             summary.efficiencyTrend === 'down' ? 'Piorando' : 'Estável'}
+                              summary.efficiencyTrend === 'down' ? 'Piorando' : 'Estável'}
                           </p>
                           <p className="text-sm text-gray-600">
                             Comparação com período anterior

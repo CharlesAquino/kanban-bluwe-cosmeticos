@@ -19,26 +19,18 @@ export default function AdminLayout({
   const { isAuthenticated, loading } = useAuth()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push('/admin/login')
-    }
-  }, [isAuthenticated, loading, router])
+  /*
+    useEffect(() => {
+      if (!loading && !isAuthenticated) {
+        router.push('/admin/login')
+      }
+    }, [isAuthenticated, loading, router])
+    */
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="h-12 w-12 text-indigo-600 mx-auto mb-4 animate-pulse" />
-          <p className="text-slate-600">Verificando autenticação...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return null
-  }
+  // Bypass auth for dev
+  // if (!isAuthenticated) {
+  //   return null
+  // }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -55,7 +47,7 @@ export default function AdminLayout({
                 <p className="text-sm text-slate-500">Bluwe Cosméticos - Sistema de Produção</p>
               </div>
             </div>
-            <Link 
+            <Link
               href="/"
               className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
             >

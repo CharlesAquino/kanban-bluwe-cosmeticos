@@ -84,6 +84,16 @@ export function getUnifiedDb(): UnifiedDbConfig {
  * ```
  */
 export function getDrizzleClient() {
+    const type = detectDbType()
+
+    if (type === 'sqlite') {
+        // Use Drizzle adapter for better-sqlite3
+        const { drizzle } = require('drizzle-orm/better-sqlite3')
+        const schema = require('./db/schema')
+        const sqliteDb = getSqliteDb()
+        return drizzle(sqliteDb, { schema })
+    }
+
     return drizzleDb
 }
 
@@ -124,5 +134,8 @@ export function getDbInfo() {
     }
 }
 
-// Export types
-export type { UnifiedDbConfig }
+// Export DB client (auto-detected)
+export const db = getUnifiedDb().client
+
+// Export schema tables for queries
+export * from './db/schema'

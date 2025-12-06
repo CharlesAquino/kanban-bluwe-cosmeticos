@@ -15,7 +15,7 @@ export default function GlobalStatusBanner() {
       setStalled(false);
       return;
     }
-    const t = setTimeout(() => setStalled(true), 8000);
+    const t = setTimeout(() => setStalled(true), 30000);
     return () => clearTimeout(t);
   }, [loading]);
 

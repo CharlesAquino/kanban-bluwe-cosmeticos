@@ -2,7 +2,7 @@
  * Queries Drizzle para Users
  */
 
-import { db, users } from '../client'
+import { db, users } from '../../db-unified'
 import { eq, desc } from 'drizzle-orm'
 
 export const userQueries = {

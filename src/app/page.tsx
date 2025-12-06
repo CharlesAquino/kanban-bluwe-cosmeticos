@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ProductForm } from '@/components/product-form'
-import { ProductTable } from '@/components/product-table'
+import { KanbanBoard } from '@/components/kanban/kanban-board'
 import {
   loadProductsAndStats,
   advanceProductStage,
@@ -84,7 +84,7 @@ export default function Home() {
     fetchData()
   }, [fetchData])
 
-  const handleAdvance = async (productId: string, nextStage: ProductStage, mod: string) => {
+  const handleAdvance = async (productId: string, nextStage: ProductStage, mod: number) => {
     try {
       const res = await advanceProductStage({ productId, nextStage, mod })
       if (!res.success) throw new Error(res.error || 'Falha ao avançar')
@@ -148,11 +148,11 @@ export default function Home() {
     try {
       // Adicionar produto ao conjunto de finalizações em andamento
       setFinalizingProducts(prev => new Set(prev).add(productId))
-      
+
       // Atualização otimista: remover produto imediatamente do estado local
       setProducts(prev => prev.filter(p => p.id !== productId))
       showToast('Finalizando produto...', 'info')
-      
+
       const res = await finalizeProduct(productId)
       if (!res.success) {
         // Se falhar, restaurar o produto no estado local
@@ -162,13 +162,13 @@ export default function Home() {
         }
         throw new Error(res.error || 'Falha ao finalizar')
       }
-      
+
       // Força recarga completa para garantir sincronia
       await fetchData()
-      
+
       // Notificar outras páginas sobre mudança nos semi-acabados
       broadcastChange({ type: 'semi_finished', action: 'product_finalized' })
-      
+
       showToast('Produto finalizado e enviado para Semi-Acabados', 'success')
     } catch (e) {
       showToast(`Erro ao finalizar: ${e instanceof Error ? e.message : 'desconhecido'}`, 'error')
@@ -183,11 +183,10 @@ export default function Home() {
   }
 
   const header = useMemo(() => (
-    <header className={`transition-all duration-300 ${
-      isScrolled 
-        ? 'fixed top-0 left-0 right-0 z-10 bg-white/90 backdrop-blur-xl border border-slate-200 shadow-sm' 
-        : 'relative z-10 bg-white/70 backdrop-blur-xl border border-slate-200'
-    }`}>
+    <header className={`transition-all duration-300 ${isScrolled
+      ? 'fixed top-0 left-0 right-0 z-10 bg-white/90 backdrop-blur-xl border border-slate-200 shadow-sm'
+      : 'relative z-10 bg-white/70 backdrop-blur-xl border border-slate-200'
+      }`}>
       <div className="mx-auto max-w-7xl px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -204,7 +203,7 @@ export default function Home() {
               <p className="text-sm text-slate-500 font-medium">Bluwe Cosméticos • Sistema de Produção</p>
             </div>
           </div>
-          
+
           <nav className="flex items-center gap-4">
             {/* Navegação Contextual baseada na página */}
             {isAdminPage && (
@@ -233,7 +232,7 @@ export default function Home() {
                 </Link>
               </>
             )}
-            
+
             {isHomePage && (
               /* Home: dropdown Overview com todas as rotas de monitoramento */
               <div className="relative z-50">
@@ -319,7 +318,7 @@ export default function Home() {
                 )}
               </div>
             )}
-            
+
             {isOverviewPage && (
               /* Overview pages: botão Admin com z-index corrigido */
               <div className="relative z-50">
@@ -391,7 +390,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50">
       {header}
-      
+
       <main className="w-full px-6 py-8">
         {loading ? (
           <div className="space-y-8">
@@ -452,7 +451,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-lg font-semibold text-slate-800">Produtos em Produção</h3>
                 </div>
-                <ProductTable
+                <KanbanBoard
                   products={products}
                   onAdvanceStage={handleAdvance}
                   onPauseProduction={handlePause}
