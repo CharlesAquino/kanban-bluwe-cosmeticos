@@ -12,8 +12,9 @@ export async function GET() {
     // Testar conexão
     let connectionTest = 'not tested'
     try {
-      // Simples query para testar conexão
-      await db.execute({ sql: 'SELECT 1 as test', args: [] })
+      // Simples query para testar conexão usando sql`` do Drizzle
+      const { sql } = await import('drizzle-orm')
+      await db.execute(sql`SELECT 1 as test`)
       connectionTest = 'OK'
     } catch (err) {
       connectionTest = `FAILED: ${err instanceof Error ? err.message : 'Unknown error'}`
