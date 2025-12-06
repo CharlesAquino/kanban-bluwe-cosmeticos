@@ -25,6 +25,8 @@ export const userQueries = {
         password: data.password,
         role: (data.role as any) || 'VIEWER',
         image: data.image,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       })
       .returning()
 
