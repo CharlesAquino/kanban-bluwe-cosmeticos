@@ -68,13 +68,20 @@ export default function ModAdminPage() {
 
     setSavingOperator(true)
     try {
+      // Concatenar função ao nome se existir, para não perder a info
+      // (já que users não tem campo jobTitle ainda)
+      const roleText = editingOperator.role || ''
+      const finalName = roleText 
+        ? `${editingOperator.name} (${roleText})`
+        : editingOperator.name
+
       const res = await fetch('/api/mod/operators', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: editingOperator.name,
+          name: finalName,
           email: email.trim(),
-          role: editingOperator.role || 'OPERATOR',
+          role: 'MOD_OPERATOR', // Sempre usar o enum correto
         }),
       })
       const json = await res.json()
